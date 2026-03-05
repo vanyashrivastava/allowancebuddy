@@ -1,0 +1,11 @@
+{
+  "agentMode": "conversational",
+  "defaultVoiceId": "replace-with-elevenlabs-voice-id",
+  "defaultModelId": "eleven_multilingual_v2",
+  "defaultLanguage": "en",
+  "maxResponseSeconds": 20,
+  "safety": {
+    "enableModeration": true,
+    "parentSafeMode": true
+  }
+}
