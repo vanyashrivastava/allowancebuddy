@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Allowance Buddy",
+    "slug": "allowance-buddy",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#F6FBF4"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.allowancebuddy.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F6FBF4"
+      },
+      "package": "com.allowancebuddy.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-asset"
+    ]
+  }
+}

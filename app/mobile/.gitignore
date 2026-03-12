@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+
+# Environment variables (keep .env.example, ignore real .env)
+.env
+.env.local
+
+# Native build folders (created by expo prebuild)
+ios/
+android/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo

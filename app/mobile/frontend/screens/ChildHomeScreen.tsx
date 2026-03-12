@@ -1,11 +1,11 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import BalanceCard from "../components/BalanceCard";
+import colors from "../theme/colors";
 
-const todayGoals = [
-  "Make bed (morning)",
-  "Read 20 minutes",
-  "Tidy toy shelf",
-];
+// ── Hardcoded sample data (will come from backend later) ───────────
+
+const todayGoals = ["Make bed (morning)", "Read 20 minutes", "Tidy toy shelf"];
 
 const actionCards = [
   { title: "Chores Completed", value: "2 / 4" },
@@ -16,17 +16,20 @@ const actionCards = [
 
 const unlockedDogTricks = ["Tail Wag", "High Five"];
 
+// ── Screen ─────────────────────────────────────────────────────────
+
 export default function ChildHomeScreen() {
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Allowance Buddy</Text>
-      <Text style={styles.subtitle}>Hi Explorer. Let&apos;s earn today&apos;s stars.</Text>
+      <Text style={styles.subtitle}>
+        Hi Explorer. Let&apos;s earn today&apos;s stars.
+      </Text>
 
-      <View style={styles.balanceCard}>
-        <Text style={styles.cardLabel}>Current Allowance Balance</Text>
-        <Text style={styles.balanceValue}>$12.50</Text>
-      </View>
+      {/* Balance */}
+      <BalanceCard label="Current Allowance Balance" amount="$12.50" />
 
+      {/* Today's Goals */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Today&apos;s Goals</Text>
         {todayGoals.map((goal) => (
@@ -36,6 +39,7 @@ export default function ChildHomeScreen() {
         ))}
       </View>
 
+      {/* Action grid */}
       <View style={styles.grid}>
         {actionCards.map((card) => (
           <Pressable key={card.title} style={styles.actionCard}>
@@ -45,32 +49,39 @@ export default function ChildHomeScreen() {
         ))}
       </View>
 
+      {/* Dog Rewards */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Dog Rewards Unlocked</Text>
         <Text style={styles.mutedText}>{unlockedDogTricks.join(" • ")}</Text>
       </View>
 
-      <View style={styles.progressWrap}>
+      {/* Streak */}
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Weekly Streak</Text>
         <Text style={styles.mutedText}>5 days in a row</Text>
         <View style={styles.progressTrack}>
           <View style={styles.progressFill} />
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
+
+// ── Styles ─────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F6FBF4",
+    backgroundColor: colors.primaryBg,
+  },
+  content: {
     padding: 16,
+    paddingBottom: 32,
   },
   title: {
     fontSize: 28,
     fontWeight: "800",
-    color: "#245B4B",
+    color: colors.primary,
   },
   subtitle: {
     marginTop: 4,
@@ -78,26 +89,8 @@ const styles = StyleSheet.create({
     color: "#3C7A6A",
     fontSize: 14,
   },
-  balanceCard: {
-    backgroundColor: "#D9F4E7",
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: "#BDE8D5",
-  },
-  cardLabel: {
-    color: "#2D6B59",
-    fontSize: 13,
-  },
-  balanceValue: {
-    fontSize: 30,
-    fontWeight: "800",
-    color: "#17483A",
-    marginTop: 6,
-  },
   section: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.white,
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
@@ -122,44 +115,38 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     width: "48%",
-    backgroundColor: "#FFF4D8",
-    borderRadius: 12,
-    padding: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#FFE6A6",
-  },
-  actionTitle: {
-    fontSize: 13,
-    color: "#7A5B00",
-    fontWeight: "700",
-  },
-  actionValue: {
-    marginTop: 6,
-    fontSize: 16,
-    color: "#5E4300",
-    fontWeight: "700",
-  },
-  mutedText: {
-    color: "#4F6D63",
-  },
-  progressWrap: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.white,
     borderRadius: 12,
     padding: 12,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: "#E5EEE8",
   },
+  actionTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#1F4D3F",
+    marginBottom: 4,
+  },
+  actionValue: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: colors.primary,
+  },
+  mutedText: {
+    color: colors.textMedium,
+  },
   progressTrack: {
-    marginTop: 10,
+    marginTop: 8,
     height: 10,
-    backgroundColor: "#EAF2ED",
-    borderRadius: 999,
+    backgroundColor: "#E5EEE8",
+    borderRadius: 5,
     overflow: "hidden",
   },
   progressFill: {
-    width: "70%",
+    width: "71%", // 5/7 days
     height: "100%",
-    backgroundColor: "#58B78D",
+    backgroundColor: "#4CAF84",
+    borderRadius: 5,
   },
 });
