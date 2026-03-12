@@ -6,6 +6,7 @@ This script is intentionally simple and beginner-friendly.
 
 from __future__ import annotations
 
+import argparse
 import csv
 from pathlib import Path
 from typing import Dict, List
@@ -16,8 +17,10 @@ from mediapipe.tasks.python.vision import PoseLandmarker, PoseLandmarkerOptions,
 from mediapipe.tasks.python.vision import PoseLandmarksConnections
 
 BASE_DIR = Path(__file__).resolve().parent
-CSV_PATH = BASE_DIR / "pose_data.csv"
 MODEL_ASSET = BASE_DIR / "pose_landmarker_lite.task"
+
+# Each team member saves to their own CSV file.
+TEAM_MEMBERS = ["vanya", "mason", "rodrigo", "samya", "oma", "rohan"]
 
 # Key-to-label mapping for quick sample collection.
 KEY_LABEL_MAP: Dict[str, str] = {
@@ -131,8 +134,23 @@ def append_sample(csv_path: Path, label: str, features: List[float]) -> None:
         writer.writerow([label] + features)
 
 
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(description="Collect labeled pose samples.")
+    parser.add_argument(
+        "--name",
+        required=True,
+        choices=TEAM_MEMBERS,
+        help=f"Your name. One of: {', '.join(TEAM_MEMBERS)}",
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
-    ensure_csv_exists(CSV_PATH)
+    args = parse_args()
+    csv_path = BASE_DIR / f"pose_data_{args.name}.csv"
+    ensure_csv_exists(csv_path)
+    print(f"Saving samples to: {csv_path.name}")
 
     if not MODEL_ASSET.exists():
         print(f"Error: Pose landmarker model not found at {MODEL_ASSET}")
@@ -176,7 +194,8 @@ def main() -> None:
 
         features: List[float] | None = None
 
-        if result.pose_landmarks and len(result.pose_landmarks) > 0:
+        has_pose = result.pose_landmarks and len(result.pose_landmarks) > 0
+        if has_pose:
             landmarks = result.pose_landmarks[0]
             draw_pose(frame, landmarks)
             features = extract_landmark_xy(landmarks)
@@ -201,7 +220,7 @@ def main() -> None:
 
         if label == "no_pose":
             empty_features = [-1.0] * 66
-            append_sample(CSV_PATH, label, empty_features)
+            append_sample(csv_path, label, empty_features)
             message = "Saved sample: no_pose"
             continue
 
@@ -209,7 +228,7 @@ def main() -> None:
             message = f"Cannot save '{label}' without visible pose."
             continue
 
-        append_sample(CSV_PATH, label, features)
+        append_sample(csv_path, label, features)
         message = f"Saved sample: {label}"
 
     landmarker.close()

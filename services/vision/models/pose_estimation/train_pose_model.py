@@ -11,31 +11,43 @@ from sklearn.metrics import accuracy_score, classification_report
 from sklearn.model_selection import train_test_split
 
 BASE_DIR = Path(__file__).resolve().parent
-DATA_PATH = BASE_DIR / "pose_data.csv"
 MODEL_PATH = BASE_DIR / "pose_classifier.pkl"
 LABELS_PATH = BASE_DIR / "labels.txt"
 
 
-def load_dataset(csv_path: Path) -> pd.DataFrame | None:
-    """Load dataset safely and return None when data is missing or invalid."""
-    if not csv_path.exists():
-        print(f"Error: Missing dataset file at {csv_path}")
+def load_all_datasets(base_dir: Path) -> pd.DataFrame | None:
+    """Find and merge all pose_data_*.csv files from each team member."""
+    csv_files = sorted(base_dir.glob("pose_data_*.csv"))
+
+    # Also include the legacy pose_data.csv if it has data rows.
+    legacy = base_dir / "pose_data.csv"
+    if legacy.exists() and legacy not in csv_files:
+        csv_files.append(legacy)
+
+    if not csv_files:
+        print("Error: No pose_data_*.csv files found. Collect samples first.")
         return None
 
-    df = pd.read_csv(csv_path)
-    if df.empty:
-        print("Error: Dataset is empty. Collect samples first.")
+    frames: list[pd.DataFrame] = []
+    for f in csv_files:
+        df = pd.read_csv(f)
+        if not df.empty and "label" in df.columns:
+            print(f"  Loaded {len(df)} samples from {f.name}")
+            frames.append(df)
+        else:
+            print(f"  Skipped {f.name} (empty or missing 'label' column)")
+
+    if not frames:
+        print("Error: All CSV files are empty. Collect samples first.")
         return None
 
-    if "label" not in df.columns:
-        print("Error: Dataset must include a 'label' column.")
-        return None
-
-    return df
+    merged = pd.concat(frames, ignore_index=True)
+    print(f"  Merged total: {len(merged)} samples from {len(frames)} file(s)")
+    return merged
 
 
 def main() -> None:
-    df = load_dataset(DATA_PATH)
+    df = load_all_datasets(BASE_DIR)
     if df is None:
         return
 
