@@ -1,0 +1,16 @@
+sweeping_motion
+wiping_table
+picking_up_items
+folding_clothes_motion
+carrying_laundry
+making_bed_motion
+reading_time
+idle_standing
+slouching
+phone_hunch
+head_down_inactive
+arms_crossed_refusal
+lying_down
+neutral_standing
+sitting_neutral
+no_pose
