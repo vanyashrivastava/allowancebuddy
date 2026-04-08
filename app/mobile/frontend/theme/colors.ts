@@ -1,44 +1,53 @@
 // Kid-friendly color palette for Allowance Buddy.
-// Soft greens, blues, and warm accents that feel playful but readable.
+// Bright, playful, and readable.
 
 const colors = {
-  // Primary — nature-inspired green
-  primary: "#245B4B",
-  primaryLight: "#D9F4E7",
-  primaryBorder: "#BDE8D5",
+  // Primary — friendly green
+  primary: "#4EA93A",
+  primaryLight: "#EAF7E4",
+  primaryBorder: "#CDEBC3",
   primaryBg: "#F6FBF4",
 
-  // Secondary — calm blue (used on parent screens)
-  secondary: "#243547",
-  secondaryLight: "#EAF1F8",
-  secondaryBorder: "#D7E5F2",
-  secondaryBg: "#F9FAFB",
+  // Secondary — calm blue for parent/headers
+  secondary: "#2F5AA8",
+  secondaryLight: "#EAF1FB",
+  secondaryBorder: "#C9D8F1",
+  secondaryBg: "#F9FBFF",
 
-  // Accent — warm gold (used on rewards)
-  accent: "#5A4A1A",
-  accentLight: "#FFFDF6",
-  accentBorder: "#E3DDC5",
+  // Accent — warm reward gold
+  accent: "#FABF58",
+  accentLight: "#FFF6E5",
+  accentBorder: "#F2D39B",
+
+  // Highlight — playful coral
+  highlight: "#F2797C",
+  highlightLight: "#FFEDEE",
+  highlightBorder: "#F5B5B7",
+
+  // Soft background tone
+  softBg: "#FEEFCA",
 
   // Status
-  success: "#1F7A4E",
-  warning: "#B8860B",
+  success: "#4EA93A",
+  warning: "#FDED47",
+  error: "#F2797C",
   muted: "#6B7280",
 
   // Neutrals
   white: "#FFFFFF",
-  background: "#F6FBF4",
+  background: "#FEEFCA",
   border: "#E5E7EB",
   textDark: "#1F2937",
   textMedium: "#4B5563",
   textLight: "#9CA3AF",
 
   // Tab bar
-  tabBarBg: "#EEF3F8",
-  tabBarBorder: "#D8E1EA",
-  tabActive: "#D5E8FF",
-  tabActiveBorder: "#9CC4F3",
-  tabText: "#35506B",
-  tabActiveText: "#153D66",
+  tabBarBg: "#FFF8E8",
+  tabBarBorder: "#F6EFA5",
+  tabActive: "#EAF7E4",
+  tabActiveBorder: "#CDEBC3",
+  tabText: "#4B5563",
+  tabActiveText: "#2F7D32",
 } as const;
 
 export default colors;

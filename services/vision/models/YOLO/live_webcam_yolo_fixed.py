@@ -1,5 +1,6 @@
 import argparse
 import time
+import platform
 
 import cv2
 from ultralytics import YOLO
@@ -24,9 +25,21 @@ def parse_args() -> argparse.Namespace:
 
 
 def open_camera(preferred_index: int) -> cv2.VideoCapture:
-    for index in [preferred_index, 0, 1, 2]:\n        cap = cv2.VideoCapture(index, cv2.CAP_AVFOUNDATION)\n        if cap.isOpened():\n            return cap
+    system = platform.system()
+    indices = [preferred_index, 0, 1, 2]
+    for index in indices:
+        if system == "Darwin":  # macOS
+            backend = cv2.CAP_AVFOUNDATION
+        elif system == "Windows":
+            backend = cv2.CAP_DSHOW
+        else:
+            backend = 0  # default
+        cap = cv2.VideoCapture(index, backend)
+        if cap.isOpened():
+            print(f"Using camera index {index} with backend {backend}")
+            return cap
         cap.release()
-    raise RuntimeError("Could not open webcam. Try another --camera index.")
+    raise RuntimeError(f"Could not open webcam on indices {indices}. Check permissions or connect camera. Try --camera with different index.")
 
 
 def main() -> None:
@@ -99,3 +112,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
