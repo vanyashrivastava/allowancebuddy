@@ -1,4 +1,4 @@
-xhnimport React from "react";
+import React from "react";
 import {
   Image,
   Pressable,
@@ -41,14 +41,18 @@ export default function ChildHomeScreen() {
           </View>
 
           <View style={styles.logoWrap}>
-            <Image\n              source={require("../logo.png")}\n              style={styles.logo}\n              resizeMode="contain"\n            />
+            <Image
+              source={require("../logo.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
           </View>
         </View>
 
         {/* Goal progress */}
         <View style={styles.goalCard}>
           <Text style={styles.goalLabel}>Goal: Unlock New Trick</Text>
-          <Text style={styles.goalTitle}>“SIT”</Text>
+          <Text style={styles.goalTitle}>"SIT"</Text>
 
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
@@ -99,9 +103,9 @@ export default function ChildHomeScreen() {
               <Text style={styles.rewardLabel}>Earned</Text>
             </View>
 
-            <View style={styles.rewardStat}>
+            <View style={[styles.rewardStat, styles.rewardStatLast]}>
               <Text style={styles.rewardIcon}>👛</Text>
-              <Text style={styles.rewardValue}>{spent}</Text>
+              <Text style={[styles.rewardValue, styles.rewardValueSpent]}>{spent}</Text>
               <Text style={styles.rewardLabel}>Spent</Text>
             </View>
           </View>
@@ -148,8 +152,9 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   },
 
+  // ── Header ──────────────────────────────────────────────
   headerCard: {
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.secondary,       // blue #2F5AA8
     borderRadius: 28,
     padding: 18,
     flexDirection: "row",
@@ -182,7 +187,7 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: 22,
-    backgroundColor: "#FFE6C9",
+    backgroundColor: "#FFE6C9",             // warm peach logo background
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
@@ -192,13 +197,14 @@ const styles = StyleSheet.create({
     height: 78,
   },
 
+  // ── Goal progress ────────────────────────────────────────
   goalCard: {
-    backgroundColor: colors.accentLight,
+    backgroundColor: colors.accentLight,    // #FFF6E5
     borderRadius: 22,
     paddingVertical: 18,
     paddingHorizontal: 16,
     borderWidth: 2,
-    borderColor: colors.accentBorder,
+    borderColor: colors.accentBorder,       // #F2D39B
     marginBottom: 14,
   },
   goalLabel: {
@@ -210,7 +216,7 @@ const styles = StyleSheet.create({
   },
   goalTitle: {
     textAlign: "center",
-    color: colors.primary,
+    color: colors.primary,                  // #4EA93A green
     fontSize: 28,
     fontWeight: "900",
     marginBottom: 14,
@@ -221,11 +227,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF7E7",
     overflow: "hidden",
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.accentBorder,
   },
   progressFill: {
     height: "100%",
     borderRadius: 999,
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.secondary,     // blue progress bar to match screenshot
   },
   balanceText: {
     textAlign: "center",
@@ -241,8 +249,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
+  // ── Today's Goals ────────────────────────────────────────
   sectionCardGreen: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primary,        // #4EA93A green
     borderRadius: 22,
     padding: 16,
     marginBottom: 14,
@@ -305,8 +314,9 @@ const styles = StyleSheet.create({
     color: "#236B2A",
   },
 
+  // ── Rewards ──────────────────────────────────────────────
   rewardsCard: {
-    backgroundColor: colors.highlight,
+    backgroundColor: colors.highlight,      // #F2797C coral/red
     borderRadius: 22,
     padding: 16,
     marginBottom: 14,
@@ -318,6 +328,7 @@ const styles = StyleSheet.create({
   },
   rewardGrid: {
     flexDirection: "row",
+    gap: 10,
   },
   rewardStat: {
     flex: 1,
@@ -325,10 +336,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 14,
     alignItems: "center",
-    marginRight: 10,
   },
   rewardStatLast: {
-    marginRight: 0,
+    // no extra margin needed with gap
   },
   rewardIcon: {
     fontSize: 24,
@@ -339,6 +349,9 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: "#2D5A2B",
   },
+  rewardValueSpent: {
+    color: "#C0392B",                       // red tint for spent amount
+  },
   rewardLabel: {
     fontSize: 14,
     fontWeight: "700",
@@ -346,8 +359,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
+  // ── CTA button ───────────────────────────────────────────
   ctaButton: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accent,         // #FABF58 gold
     borderRadius: 18,
     paddingVertical: 16,
     alignItems: "center",
@@ -364,10 +378,11 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
 
+  // ── Bottom nav ───────────────────────────────────────────
   bottomNav: {
-    backgroundColor: "#FFF8E8",
+    backgroundColor: colors.tabBarBg,       // #FFF8E8
     borderTopWidth: 1,
-    borderTopColor: colors.tabBarBorder,
+    borderTopColor: colors.tabBarBorder,    // #F6EFA5
     borderRadius: 22,
     paddingVertical: 14,
     paddingHorizontal: 10,
@@ -398,6 +413,6 @@ const styles = StyleSheet.create({
   navTextActive: {
     fontSize: 12,
     fontWeight: "800",
-    color: colors.primary,
+    color: colors.primary,                  // #4EA93A green for active tab
   },
 });
