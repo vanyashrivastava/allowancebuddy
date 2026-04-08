@@ -6,7 +6,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import ChildHomeScreen from "../screens/ChildHomeScreen";
 import ParentDashboardScreen from "../screens/ParentDashboardScreen";
-import RewardsScreen from "../screens/RewardsScreen";
+import RewardsScreen from "../screens/RewardScreen";
 import LessonsScreen from "../screens/LessonsScreen";
 import colors from "../theme/colors";
 
