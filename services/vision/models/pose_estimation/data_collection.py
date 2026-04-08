@@ -10,6 +10,7 @@ import argparse
 import csv
 from pathlib import Path
 from typing import Dict, List
+import time
 
 import cv2
 import mediapipe as mp
@@ -177,6 +178,10 @@ def main() -> None:
 
     message = "Waiting for pose..."
     frame_timestamp_ms = 0
+    
+    pending_label = None
+    countdown_start = None
+    countdown_seconds = 3
 
     while True:
         ok, frame = cap.read()
@@ -202,6 +207,35 @@ def main() -> None:
         else:
             message = "No pose detected. Press [0] for no_pose or move into frame."
 
+        if pending_label is not None and countdown_start is not None:
+            elapsed = time.time() - countdown_start
+            remaining = countdown_seconds - int(elapsed)
+
+            if remaining > 0:
+                cv2.putText(
+                    frame,
+                    f"Capturing in {remaining}...",
+                    (10, frame.shape[0] // 2),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1.2,
+                    (0, 255, 255),
+                    3,
+                )
+                message = f"Get ready: {pending_label}"
+            else:
+                if pending_label == "no_pose":
+                    empty_features = [-1.0] * 66
+                    append_sample(csv_path, pending_label, empty_features)
+                    message = "Saved: no_pose"
+                elif features is None:
+                    message = f"No pose detected for {pending_label}"
+                else:
+                    append_sample(csv_path, pending_label, features)
+                    message = f"Saved: {pending_label}"
+
+                pending_label = None
+                countdown_start = None
+        
         draw_legend(frame, message)
         cv2.imshow("Pose Data Collection", frame)
 
@@ -212,24 +246,17 @@ def main() -> None:
         if key_val == 255:
             continue
 
+                # Ignore new key presses while countdown is active
+        if pending_label is not None:
+            continue
+
         key = chr(key_val).lower()
         if key not in KEY_LABEL_MAP:
             continue
 
-        label = KEY_LABEL_MAP[key]
-
-        if label == "no_pose":
-            empty_features = [-1.0] * 66
-            append_sample(csv_path, label, empty_features)
-            message = "Saved sample: no_pose"
-            continue
-
-        if features is None:
-            message = f"Cannot save '{label}' without visible pose."
-            continue
-
-        append_sample(csv_path, label, features)
-        message = f"Saved sample: {label}"
+        pending_label = KEY_LABEL_MAP[key]
+        countdown_start = time.time()
+        message = f"Preparing to save: {pending_label}"
 
     landmarker.close()
     cap.release()
