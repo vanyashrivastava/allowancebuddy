@@ -7,6 +7,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import ChildHomeScreen from "../screens/ChildHomeScreen";
 import ParentDashboardScreen from "../screens/ParentDashboardScreen";
 import RewardsScreen from "../screens/RewardsScreen";
+import LessonsScreen from "../screens/LessonsScreen";
 import colors from "../theme/colors";
 
 // Define the param list so TypeScript knows our routes
@@ -14,6 +15,7 @@ export type RootTabParamList = {
   Child: undefined;
   Parent: undefined;
   Rewards: undefined;
+  Lessons: undefined;
 };
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -35,6 +37,7 @@ export default function AppNavigation() {
         <Tab.Screen name="Child" component={ChildHomeScreen} />
         <Tab.Screen name="Parent" component={ParentDashboardScreen} />
         <Tab.Screen name="Rewards" component={RewardsScreen} />
+        <Tab.Screen name="Lessons" component={LessonsScreen} />
       </Tab.Navigator>
     </NavigationContainer>
   );
