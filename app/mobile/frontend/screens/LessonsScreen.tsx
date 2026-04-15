@@ -1,8 +1,8 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Animated,
-  FlatList,
-  Pressable,
+  Easing,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,284 +11,844 @@ import {
 } from "react-native";
 import colors from "../theme/colors";
 
-// ── Types ──────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// BUCKS FINANCIAL LITERACY — Lessons for ages 7–9
+// 3 lessons, each with: story cards → mini-game → quiz
+// ═══════════════════════════════════════════════════════════════════
 
-type QuizQuestion = {
-  id: string;
-  question: string;
-  options: string[];
-  correctIndex: number;
-  explanation: string;
-};
+type LessonId = "needs-wants" | "borrowing" | "growth";
 
-type FlipCardData = {
-  id: string;
-  front: string;
-  back: string;
+type Lesson = {
+  id: LessonId;
+  number: number;
   emoji: string;
+  title: string;
+  subtitle: string;
+  color: string;
+  lightColor: string;
 };
 
-// ── Lesson Data ────────────────────────────────────────────────────
-
-const FLIP_CARDS: FlipCardData[] = [
+const LESSONS: Lesson[] = [
   {
-    id: "1",
-    emoji: "💳",
-    front: "What is a Debit Card?",
-    back: "A debit card spends money you ALREADY have in your bank account. When you buy something, the money comes out right away!",
+    id: "needs-wants",
+    number: 1,
+    emoji: "🦴",
+    title: "Need It or Want It?",
+    subtitle: "Bucks finds $20!",
+    color: "#4CAF7C",
+    lightColor: "#E8F8EF",
   },
   {
-    id: "2",
-    emoji: "🏦",
-    front: "What is a Credit Card?",
-    back: "A credit card lets you borrow money from a bank to buy things now and pay it back later — sometimes with extra charges called interest.",
+    id: "borrowing",
+    number: 2,
+    emoji: "💰",
+    title: "Bucks Borrows a Bone",
+    subtitle: "Loans & interest",
+    color: "#E07B39",
+    lightColor: "#FEF0E6",
   },
   {
-    id: "3",
-    emoji: "⚠️",
-    front: "What is Interest?",
-    back: "Interest is the extra money you owe when you borrow money and don't pay it back quickly. Like a fee for borrowing!",
-  },
-  {
-    id: "4",
-    emoji: "⭐",
-    front: "What is a Credit Score?",
-    back: "A credit score is like a grade for how well you pay back borrowed money. A high score means banks trust you more!",
-  },
-];
-
-const QUIZ_QUESTIONS: QuizQuestion[] = [
-  {
-    id: "q1",
-    question: "You buy a $5 snack with your debit card. What happens?",
-    options: [
-      "The bank lends you $5",
-      "$5 is taken from your bank account right away",
-      "You pay $5 later this month",
-      "Nothing happens yet",
-    ],
-    correctIndex: 1,
-    explanation:
-      "Debit cards pull money directly from your account immediately — no borrowing involved!",
-  },
-  {
-    id: "q2",
-    question: "Which card could lead to owing MORE money than you spent?",
-    options: ["Debit card", "Library card", "Credit card", "Gift card"],
-    correctIndex: 2,
-    explanation:
-      "Credit cards charge interest if you don't pay the full balance on time, so you could owe more than you originally spent.",
-  },
-  {
-    id: "q3",
-    question: "Mia has $20 in her bank account. She uses her debit card to buy a $25 game. What happens?",
-    options: [
-      "She gets the game and pays later",
-      "The bank covers the extra $5 for free",
-      "The transaction is declined — not enough money",
-      "She earns reward points",
-    ],
-    correctIndex: 2,
-    explanation:
-      "With a debit card, you can only spend what's in your account. No money = no purchase!",
-  },
-  {
-    id: "q4",
-    question: "Which statement about credit cards is TRUE?",
-    options: [
-      "They are always free to use",
-      "They give you free money from the bank",
-      "They let you borrow money you must repay",
-      "They only work in stores, not online",
-    ],
-    correctIndex: 2,
-    explanation:
-      "Credit cards are loans — the bank pays for now, and you pay the bank back (sometimes with interest).",
-  },
-  {
-    id: "q5",
-    question: "What is ONE benefit of using a debit card?",
-    options: [
-      "You can spend more than you have",
-      "It builds your credit score automatically",
-      "You only spend money you already have",
-      "You earn interest on purchases",
-    ],
-    correctIndex: 2,
-    explanation:
-      "Debit cards help you stay within budget since you can't spend money you don't have!",
+    id: "growth",
+    number: 3,
+    emoji: "🌱",
+    title: "Watch Money Grow!",
+    subtitle: "The magic of compound",
+    color: "#6C63FF",
+    lightColor: "#EEEDFF",
   },
 ];
 
-// ── Flip Card Component ────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// BUCKS MASCOT — reacts to what the kid is doing
+// ═══════════════════════════════════════════════════════════════════
 
-function FlipCard({ card }: { card: FlipCardData }) {
-  const [flipped, setFlipped] = useState(false);
-  const anim = useRef(new Animated.Value(0)).current;
+type BucksMood = "idle" | "happy" | "sad" | "excited" | "thinking";
 
-  const flip = () => {
-    Animated.spring(anim, {
-      toValue: flipped ? 0 : 1,
-      friction: 8,
-      useNativeDriver: true,
-    }).start(() => setFlipped((f) => !f));
-  };
+const BUCKS_FACES: Record<BucksMood, string> = {
+  idle: "🐕",
+  happy: "🐶",
+  sad: "😢",
+  excited: "🤩",
+  thinking: "🤔",
+};
 
-  const frontRotate = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "180deg"],
-  });
-  const backRotate = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["180deg", "360deg"],
-  });
-  const frontOpacity = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0, 0] });
-  const backOpacity = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0, 1] });
+const BUCKS_LINES: Record<BucksMood, string[]> = {
+  idle: ["Let's learn!", "Ready, pup?", "You got this!"],
+  happy: ["Woof! Nice!", "Good job!", "You're smart!", "Pawsome!"],
+  sad: ["Try again!", "Almost!", "Keep going!"],
+  excited: ["AMAZING!", "WOOHOO!", "YOU DID IT!"],
+  thinking: ["Hmm...", "Think hard!", "You can do it!"],
+};
+
+function BucksMascot({ mood }: { mood: BucksMood }) {
+  const bounce = useRef(new Animated.Value(0)).current;
+  const [line, setLine] = useState("");
+
+  useEffect(() => {
+    // Pick a random line for this mood
+    const lines = BUCKS_LINES[mood];
+    setLine(lines[Math.floor(Math.random() * lines.length)]);
+
+    // Bounce animation
+    bounce.setValue(0);
+    Animated.sequence([
+      Animated.spring(bounce, { toValue: 1, friction: 4, useNativeDriver: true }),
+    ]).start();
+  }, [mood]);
+
+  const scale = bounce.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] });
+  const showBubble = mood !== "idle";
 
   return (
-    <TouchableOpacity onPress={flip} activeOpacity={0.9} style={styles.flipWrapper}>
-      {/* Front */}
-      <Animated.View
-        style={[
-          styles.flipCard,
-          styles.flipFront,
-          { transform: [{ rotateY: frontRotate }], opacity: frontOpacity },
-        ]}
-      >
-        <Text style={styles.flipEmoji}>{card.emoji}</Text>
-        <Text style={styles.flipFrontText}>{card.front}</Text>
-        <Text style={styles.flipHint}>Tap to reveal</Text>
-      </Animated.View>
-
-      {/* Back */}
-      <Animated.View
-        style={[
-          styles.flipCard,
-          styles.flipBack,
-          { transform: [{ rotateY: backRotate }], opacity: backOpacity },
-        ]}
-      >
-        <Text style={styles.flipEmoji}>{card.emoji}</Text>
-        <Text style={styles.flipBackText}>{card.back}</Text>
-        <Text style={styles.flipHint}>Tap to flip back</Text>
-      </Animated.View>
-    </TouchableOpacity>
+    <View style={styles.mascotWrap} pointerEvents="none">
+      {showBubble && (
+        <Animated.View style={[styles.speechBubble, { opacity: bounce }]}>
+          <Text style={styles.speechText}>{line}</Text>
+          <View style={styles.speechTail} />
+        </Animated.View>
+      )}
+      <Animated.Text style={[styles.mascotEmoji, { transform: [{ scale }] }]}>
+        {BUCKS_FACES[mood]}
+      </Animated.Text>
+    </View>
   );
 }
 
-// ── Quiz Component ─────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// COIN RAIN — fires on correct answers
+// Renders 8 coins that fall from top with staggered timing
+// ═══════════════════════════════════════════════════════════════════
 
-function QuizSection() {
-  const [currentQ, setCurrentQ] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [showResult, setShowResult] = useState(false);
-  const [score, setScore] = useState(0);
-  const [finished, setFinished] = useState(false);
+function CoinRain({ trigger }: { trigger: number }) {
+  // 8 coins, each with its own animated value and randomized horizontal position
+  const coins = useRef(
+    Array.from({ length: 8 }, () => ({
+      anim: new Animated.Value(0),
+      x: Math.random() * 300,
+      delay: Math.random() * 200,
+      emoji: ["💰", "🪙", "💵", "🦴"][Math.floor(Math.random() * 4)],
+    }))
+  ).current;
 
-  const q = QUIZ_QUESTIONS[currentQ];
-  const isCorrect = selected === q.correctIndex;
+  useEffect(() => {
+    if (trigger === 0) return;
+    // Reset and replay
+    coins.forEach((c) => {
+      c.anim.setValue(0);
+      c.x = Math.random() * 300;
+      c.delay = Math.random() * 200;
+      c.emoji = ["💰", "🪙", "💵", "🦴"][Math.floor(Math.random() * 4)];
+    });
+    Animated.stagger(
+      50,
+      coins.map((c) =>
+        Animated.timing(c.anim, {
+          toValue: 1,
+          duration: 1400,
+          delay: c.delay,
+          easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        })
+      )
+    ).start();
+  }, [trigger]);
 
-  const handleSelect = (idx: number) => {
-    if (showResult) return;
-    setSelected(idx);
-    setShowResult(true);
-    if (idx === q.correctIndex) setScore((s) => s + 1);
-  };
+  return (
+    <View style={styles.coinRainWrap} pointerEvents="none">
+      {coins.map((c, i) => {
+        const translateY = c.anim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [-80, 600],
+        });
+        const rotate = c.anim.interpolate({
+          inputRange: [0, 1],
+          outputRange: ["0deg", "360deg"],
+        });
+        const opacity = c.anim.interpolate({
+          inputRange: [0, 0.1, 0.8, 1],
+          outputRange: [0, 1, 1, 0],
+        });
+        return (
+          <Animated.Text
+            key={i}
+            style={[
+              styles.coin,
+              {
+                left: c.x,
+                opacity,
+                transform: [{ translateY }, { rotate }],
+              },
+            ]}
+          >
+            {c.emoji}
+          </Animated.Text>
+        );
+      })}
+    </View>
+  );
+}
 
-  const handleNext = () => {
-    if (currentQ + 1 >= QUIZ_QUESTIONS.length) {
-      setFinished(true);
-    } else {
-      setCurrentQ((c) => c + 1);
-      setSelected(null);
-      setShowResult(false);
+// ═══════════════════════════════════════════════════════════════════
+// BONE COUNTER — header badge showing earned bones
+// ═══════════════════════════════════════════════════════════════════
+
+function BoneCounter({ count }: { count: number }) {
+  const pulse = useRef(new Animated.Value(1)).current;
+  const prevCount = useRef(count);
+
+  useEffect(() => {
+    if (count > prevCount.current) {
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1.3, duration: 150, useNativeDriver: true }),
+        Animated.spring(pulse, { toValue: 1, friction: 4, useNativeDriver: true }),
+      ]).start();
     }
-  };
+    prevCount.current = count;
+  }, [count]);
 
-  const handleRestart = () => {
-    setCurrentQ(0);
-    setSelected(null);
-    setShowResult(false);
-    setScore(0);
-    setFinished(false);
-  };
+  return (
+    <Animated.View style={[styles.boneCounter, { transform: [{ scale: pulse }] }]}>
+      <Text style={styles.boneCounterEmoji}>🦴</Text>
+      <Text style={styles.boneCounterText}>{count}</Text>
+    </Animated.View>
+  );
+}
 
-  if (finished) {
-    const pct = Math.round((score / QUIZ_QUESTIONS.length) * 100);
-    const msg =
-      pct === 100 ? "Perfect score! 🏆" : pct >= 60 ? "Great job! 🌟" : "Keep practicing! 💪";
-    return (
-      <View style={styles.finishedBox}>
-        <Text style={styles.finishedEmoji}>🎉</Text>
-        <Text style={styles.finishedTitle}>{msg}</Text>
-        <Text style={styles.finishedScore}>
-          You got {score} out of {QUIZ_QUESTIONS.length} correct ({pct}%)
+
+// ── Story Data ────────────────────────────────────────────────────
+
+type StoryPage = { emoji: string; text: string };
+
+const STORIES: Record<LessonId, StoryPage[]> = {
+  "needs-wants": [
+    { emoji: "🐕", text: "Meet Bucks! He loves bones and money." },
+    { emoji: "💵", text: "One day, Bucks finds $20 on the sidewalk!" },
+    { emoji: "🤔", text: "His bowl is empty. He needs food. But he WANTS a squeaky toy!" },
+    { emoji: "✨", text: "A NEED is something you must have. A WANT is something that would be fun." },
+    { emoji: "🦴", text: "Dog food costs $15. The toy costs $12. He can't buy BOTH!" },
+    { emoji: "🎯", text: "What you give up is called OPPORTUNITY COST." },
+  ],
+  borrowing: [
+    { emoji: "🛹", text: "Bucks sees a shiny skateboard for $50!" },
+    { emoji: "🐽", text: "But his piggy bank only has $20. He's $30 short!" },
+    { emoji: "🐶", text: "Rex says: 'I'll lend you $30! But pay me back $35.'" },
+    { emoji: "💸", text: "That extra $5 is called INTEREST — the fee for borrowing." },
+    { emoji: "✅", text: "GOOD DEBT helps you earn more later (like college)." },
+    { emoji: "❌", text: "BAD DEBT buys stuff you don't really need." },
+  ],
+  growth: [
+    { emoji: "🐷", text: "Bucks saved $100! Where should he keep it?" },
+    { emoji: "🏦", text: "A bank will PAY him to keep money there. It's called interest!" },
+    { emoji: "📏", text: "SIMPLE interest: earn the same amount every year." },
+    { emoji: "❄️", text: "COMPOUND interest: a snowball that grows BIGGER each year!" },
+    { emoji: "🚀", text: "$100 becomes $259 after 10 years with compound. Magic!" },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// SHARED: Story Carousel
+// ═══════════════════════════════════════════════════════════════════
+
+function StoryCarousel({ lesson, onDone }: { lesson: Lesson; onDone: () => void }) {
+  const [page, setPage] = useState(0);
+  const pages = STORIES[lesson.id];
+  const bounce = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    bounce.setValue(0);
+    Animated.spring(bounce, { toValue: 1, friction: 5, useNativeDriver: true }).start();
+  }, [page]);
+
+  const scale = bounce.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] });
+
+  return (
+    <View style={[styles.storyBox, { backgroundColor: lesson.lightColor }]}>
+      <View style={styles.storyDots}>
+        {pages.map((_, i) => (
+          <View
+            key={i}
+            style={[
+              styles.storyDot,
+              i === page && { backgroundColor: lesson.color, width: 24 },
+              i < page && { backgroundColor: lesson.color },
+            ]}
+          />
+        ))}
+      </View>
+
+      <Animated.Text style={[styles.storyEmoji, { transform: [{ scale }] }]}>
+        {pages[page].emoji}
+      </Animated.Text>
+      <Text style={styles.storyText}>{pages[page].text}</Text>
+
+      <TouchableOpacity
+        style={[styles.bigBtn, { backgroundColor: lesson.color }]}
+        onPress={() => (page + 1 >= pages.length ? onDone() : setPage((p) => p + 1))}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.bigBtnText}>
+          {page + 1 >= pages.length ? "Let's Play! 🎮" : "Next →"}
         </Text>
-        <TouchableOpacity style={styles.nextBtn} onPress={handleRestart}>
-          <Text style={styles.nextBtnText}>Try Again</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LESSON 1 GAME: Sort Needs vs Wants (tap to sort)
+// ═══════════════════════════════════════════════════════════════════
+
+type SortItem = { id: string; emoji: string; label: string; answer: "need" | "want" };
+
+const SORT_ITEMS: SortItem[] = [
+  { id: "s1", emoji: "🥦", label: "Food", answer: "need" },
+  { id: "s2", emoji: "🎮", label: "Video game", answer: "want" },
+  { id: "s3", emoji: "💊", label: "Medicine", answer: "need" },
+  { id: "s4", emoji: "🍭", label: "Candy", answer: "want" },
+  { id: "s5", emoji: "🧥", label: "Winter coat", answer: "need" },
+  { id: "s6", emoji: "👟", label: "Fancy sneakers", answer: "want" },
+  { id: "s7", emoji: "🪥", label: "Toothbrush", answer: "need" },
+  { id: "s8", emoji: "🎬", label: "Movie ticket", answer: "want" },
+];
+
+function NeedsWantsGame({
+  onDone,
+  onCorrect,
+  onWrong,
+}: {
+  onDone: () => void;
+  onCorrect: () => void;
+  onWrong: () => void;
+}) {
+  const [idx, setIdx] = useState(0);
+  const [score, setScore] = useState(0);
+  const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
+  const shake = useRef(new Animated.Value(0)).current;
+
+  const item = SORT_ITEMS[idx];
+  const done = idx >= SORT_ITEMS.length;
+
+  const handleSort = (choice: "need" | "want") => {
+    if (feedback) return;
+    const correct = choice === item.answer;
+    setFeedback(correct ? "correct" : "wrong");
+    if (correct) {
+      setScore((s) => s + 1);
+      onCorrect();
+    } else {
+      onWrong();
+      Animated.sequence([
+        Animated.timing(shake, { toValue: 10, duration: 60, useNativeDriver: true }),
+        Animated.timing(shake, { toValue: -10, duration: 60, useNativeDriver: true }),
+        Animated.timing(shake, { toValue: 0, duration: 60, useNativeDriver: true }),
+      ]).start();
+    }
+    setTimeout(() => {
+      setFeedback(null);
+      setIdx((i) => i + 1);
+    }, 800);
+  };
+
+  if (done) {
+    return (
+      <View style={styles.gameBox}>
+        <Text style={styles.gameDoneEmoji}>🏆</Text>
+        <Text style={styles.gameDoneTitle}>Sorting Complete!</Text>
+        <Text style={styles.gameDoneScore}>
+          You got {score} out of {SORT_ITEMS.length}!
+        </Text>
+        <TouchableOpacity style={[styles.bigBtn, { backgroundColor: "#4CAF7C" }]} onPress={onDone}>
+          <Text style={styles.bigBtnText}>Next: Quiz Time! 🧠</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View style={styles.quizBox}>
-      {/* Progress */}
+    <View style={styles.gameBox}>
+      <Text style={styles.gameTitle}>🎯 Tap NEED or WANT</Text>
+      <Text style={styles.gameCounter}>
+        {idx + 1} of {SORT_ITEMS.length} • Score: {score} ⭐
+      </Text>
+
+      <Animated.View
+        style={[
+          styles.sortCard,
+          { transform: [{ translateX: shake }] },
+          feedback === "correct" && { backgroundColor: "#E8F8EF", borderColor: "#4CAF7C" },
+          feedback === "wrong" && { backgroundColor: "#FEE", borderColor: "#E07B39" },
+        ]}
+      >
+        <Text style={styles.sortEmoji}>{item.emoji}</Text>
+        <Text style={styles.sortLabel}>{item.label}</Text>
+        {feedback === "correct" && <Text style={styles.sortFeedback}>✅ Yes!</Text>}
+        {feedback === "wrong" && (
+          <Text style={styles.sortFeedback}>
+            Actually a {item.answer.toUpperCase()}!
+          </Text>
+        )}
+      </Animated.View>
+
+      <View style={styles.sortBtnRow}>
+        <TouchableOpacity
+          style={[styles.sortBtn, { backgroundColor: "#4CAF7C" }]}
+          onPress={() => handleSort("need")}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.sortBtnEmoji}>🫶</Text>
+          <Text style={styles.sortBtnText}>NEED</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.sortBtn, { backgroundColor: "#E07B39" }]}
+          onPress={() => handleSort("want")}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.sortBtnEmoji}>✨</Text>
+          <Text style={styles.sortBtnText}>WANT</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LESSON 2 GAME: Coin Counter — Interest Calculator
+// Tap to add coins and see how interest grows
+// ═══════════════════════════════════════════════════════════════════
+
+function CoinCounterGame({ onDone }: { onDone: () => void }) {
+  const [borrowed, setBorrowed] = useState(100);
+  const [rate, setRate] = useState(10);
+
+  const interest = Math.round(borrowed * (rate / 100));
+  const total = borrowed + interest;
+
+  return (
+    <View style={styles.gameBox}>
+      <Text style={styles.gameTitle}>💰 Interest Machine</Text>
+      <Text style={styles.gameSubtitle}>Tap + and − to change numbers!</Text>
+
+      {/* Borrowed amount */}
+      <View style={styles.counterRow}>
+        <Text style={styles.counterLabel}>Bucks borrows:</Text>
+        <View style={styles.counterControls}>
+          <TouchableOpacity
+            style={styles.counterBtn}
+            onPress={() => setBorrowed((b) => Math.max(10, b - 10))}
+          >
+            <Text style={styles.counterBtnText}>−</Text>
+          </TouchableOpacity>
+          <Text style={styles.counterValue}>${borrowed}</Text>
+          <TouchableOpacity
+            style={styles.counterBtn}
+            onPress={() => setBorrowed((b) => Math.min(500, b + 10))}
+          >
+            <Text style={styles.counterBtnText}>+</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Interest rate */}
+      <View style={styles.counterRow}>
+        <Text style={styles.counterLabel}>Interest rate:</Text>
+        <View style={styles.counterControls}>
+          <TouchableOpacity
+            style={styles.counterBtn}
+            onPress={() => setRate((r) => Math.max(5, r - 5))}
+          >
+            <Text style={styles.counterBtnText}>−</Text>
+          </TouchableOpacity>
+          <Text style={styles.counterValue}>{rate}%</Text>
+          <TouchableOpacity
+            style={styles.counterBtn}
+            onPress={() => setRate((r) => Math.min(50, r + 5))}
+          >
+            <Text style={styles.counterBtnText}>+</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Result */}
+      <View style={styles.resultBox}>
+        <Text style={styles.resultRow}>
+          💵 Extra (interest): <Text style={styles.resultValue}>${interest}</Text>
+        </Text>
+        <View style={styles.resultDivider} />
+        <Text style={styles.resultBig}>
+          Pay back: <Text style={{ color: "#E07B39" }}>${total}</Text>
+        </Text>
+      </View>
+
+      <Text style={styles.tipText}>
+        💡 Higher rate = MORE money to pay back!
+      </Text>
+
+      <TouchableOpacity style={[styles.bigBtn, { backgroundColor: "#E07B39" }]} onPress={onDone}>
+        <Text style={styles.bigBtnText}>Next: Quiz Time! 🧠</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LESSON 3 GAME: Money Growth Race — Simple vs Compound
+// Animated bars that grow year by year
+// ═══════════════════════════════════════════════════════════════════
+
+function GrowthRaceGame({ onDone }: { onDone: () => void }) {
+  const [year, setYear] = useState(0);
+  const maxYear = 10;
+  const start = 100;
+  const rate = 0.1;
+
+  const simple = start + start * rate * year;
+  const compound = start * Math.pow(1 + rate, year);
+  const maxVal = start * Math.pow(1 + rate, maxYear);
+
+  const simpleWidth = useRef(new Animated.Value(0)).current;
+  const compoundWidth = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(simpleWidth, {
+        toValue: (simple / maxVal) * 100,
+        duration: 400,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: false,
+      }),
+      Animated.timing(compoundWidth, {
+        toValue: (compound / maxVal) * 100,
+        duration: 400,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: false,
+      }),
+    ]).start();
+  }, [year]);
+
+  return (
+    <View style={styles.gameBox}>
+      <Text style={styles.gameTitle}>🚀 Money Race!</Text>
+      <Text style={styles.gameSubtitle}>Start with $100. Tap to fast-forward!</Text>
+
+      <View style={styles.yearBadge}>
+        <Text style={styles.yearBadgeText}>Year {year}</Text>
+      </View>
+
+      {/* Simple bar */}
+      <View style={styles.barLabelRow}>
+        <Text style={styles.barLabel}>📏 Simple</Text>
+        <Text style={styles.barValue}>${simple.toFixed(0)}</Text>
+      </View>
+      <View style={styles.barTrack}>
+        <Animated.View
+          style={[
+            styles.barFill,
+            {
+              backgroundColor: "#4CAF7C",
+              width: simpleWidth.interpolate({
+                inputRange: [0, 100],
+                outputRange: ["0%", "100%"],
+              }),
+            },
+          ]}
+        />
+      </View>
+
+      {/* Compound bar */}
+      <View style={styles.barLabelRow}>
+        <Text style={styles.barLabel}>❄️ Compound</Text>
+        <Text style={styles.barValue}>${compound.toFixed(0)}</Text>
+      </View>
+      <View style={styles.barTrack}>
+        <Animated.View
+          style={[
+            styles.barFill,
+            {
+              backgroundColor: "#6C63FF",
+              width: compoundWidth.interpolate({
+                inputRange: [0, 100],
+                outputRange: ["0%", "100%"],
+              }),
+            },
+          ]}
+        />
+      </View>
+
+      {/* Year controls */}
+      <View style={styles.yearControls}>
+        <TouchableOpacity
+          style={styles.counterBtn}
+          onPress={() => setYear((y) => Math.max(0, y - 1))}
+        >
+          <Text style={styles.counterBtnText}>−</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.fastForwardBtn]}
+          onPress={() => setYear((y) => Math.min(maxYear, y + 1))}
+        >
+          <Text style={styles.fastForwardText}>⏩ Next Year</Text>
+        </TouchableOpacity>
+      </View>
+
+      {year >= maxYear && (
+        <Text style={styles.tipText}>
+          🤯 Compound earned ${(compound - simple).toFixed(0)} MORE than simple!
+        </Text>
+      )}
+
+      <TouchableOpacity
+        style={[styles.bigBtn, { backgroundColor: "#6C63FF" }]}
+        onPress={onDone}
+      >
+        <Text style={styles.bigBtnText}>Next: Quiz Time! 🧠</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SHARED: Quiz Engine
+// ═══════════════════════════════════════════════════════════════════
+
+type QuizQ = {
+  question: string;
+  emoji: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+};
+
+const QUIZZES: Record<LessonId, QuizQ[]> = {
+  "needs-wants": [
+    {
+      emoji: "🍎",
+      question: "Which one is a NEED?",
+      options: ["Candy 🍬", "Food 🥗", "Toy car 🚗", "Sticker 💫"],
+      correctIndex: 1,
+      explanation: "Food keeps you healthy and alive. That's a need!",
+    },
+    {
+      emoji: "💰",
+      question: "Bucks has $20. He buys a $12 toy. How much is left?",
+      options: ["$8", "$10", "$12", "$32"],
+      correctIndex: 0,
+      explanation: "$20 − $12 = $8. Now he can't afford $15 dog food!",
+    },
+    {
+      emoji: "🎯",
+      question: "What is 'opportunity cost'?",
+      options: [
+        "Money you find",
+        "What you give up when you choose",
+        "A type of toy",
+        "Free stuff",
+      ],
+      correctIndex: 1,
+      explanation: "Every choice means giving something else up. That's opportunity cost!",
+    },
+    {
+      emoji: "🤔",
+      question: "Bucks has $20. What should he buy FIRST?",
+      options: ["The $12 toy", "The $15 dog food", "Nothing", "Both"],
+      correctIndex: 1,
+      explanation: "Food is a NEED. Always take care of needs before wants!",
+    },
+  ],
+  borrowing: [
+    {
+      emoji: "💸",
+      question: "What is INTEREST?",
+      options: [
+        "Free money",
+        "The fee for borrowing",
+        "A type of bank",
+        "A coin",
+      ],
+      correctIndex: 1,
+      explanation: "Interest is the extra money you pay for borrowing. It's a fee!",
+    },
+    {
+      emoji: "🧮",
+      question: "Borrow $100 at 10% interest. How much EXTRA do you pay?",
+      options: ["$1", "$10", "$100", "$110"],
+      correctIndex: 1,
+      explanation: "$100 × 10% = $10. You pay back $110 total.",
+    },
+    {
+      emoji: "🎓",
+      question: "Which is GOOD debt?",
+      options: [
+        "Borrow for candy",
+        "Borrow to learn a skill",
+        "Borrow for a toy",
+        "Borrow for gum",
+      ],
+      correctIndex: 1,
+      explanation: "Good debt helps you earn MORE money later. Like learning!",
+    },
+    {
+      emoji: "⏰",
+      question: "The LONGER you take to pay back a loan...",
+      options: [
+        "The less you owe",
+        "The more interest you owe",
+        "Nothing changes",
+        "It disappears",
+      ],
+      correctIndex: 1,
+      explanation: "More time = more interest stacking up. Pay back fast!",
+    },
+  ],
+  growth: [
+    {
+      emoji: "❄️",
+      question: "Compound interest earns interest on...",
+      options: [
+        "Only your original money",
+        "Your money AND past interest",
+        "Nothing",
+        "Only on Mondays",
+      ],
+      correctIndex: 1,
+      explanation: "That's why it grows so fast — like a rolling snowball!",
+    },
+    {
+      emoji: "📏",
+      question: "Simple interest means you earn...",
+      options: [
+        "A different amount each year",
+        "The same amount each year",
+        "Nothing",
+        "Double every year",
+      ],
+      correctIndex: 1,
+      explanation: "Simple = the same $ every year, always on your starting amount.",
+    },
+    {
+      emoji: "🐷",
+      question: "Does a piggy bank at home earn interest?",
+      options: ["Yes, lots!", "No, never", "Only on weekends", "Maybe"],
+      correctIndex: 1,
+      explanation: "Piggy banks don't grow. Only banks pay you interest!",
+    },
+    {
+      emoji: "⏳",
+      question: "When is the BEST time to start saving?",
+      options: ["When you're old", "As early as possible", "Never", "Only on your birthday"],
+      correctIndex: 1,
+      explanation: "The earlier you start, the more time compound has to grow your money!",
+    },
+  ],
+};
+
+function QuizGame({
+  lesson,
+  onDone,
+  onCorrect,
+  onWrong,
+}: {
+  lesson: Lesson;
+  onDone: (score: number, total: number) => void;
+  onCorrect: () => void;
+  onWrong: () => void;
+}) {
+  const questions = QUIZZES[lesson.id];
+  const [idx, setIdx] = useState(0);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [showResult, setShowResult] = useState(false);
+  const [score, setScore] = useState(0);
+
+  const q = questions[idx];
+  const isCorrect = selected === q.correctIndex;
+
+  const handleSelect = (i: number) => {
+    if (showResult) return;
+    setSelected(i);
+    setShowResult(true);
+    if (i === q.correctIndex) {
+      setScore((s) => s + 1);
+      onCorrect();
+    } else {
+      onWrong();
+    }
+  };
+
+  const handleNext = () => {
+    if (idx + 1 >= questions.length) {
+      onDone(score, questions.length);
+    } else {
+      setIdx((i) => i + 1);
+      setSelected(null);
+      setShowResult(false);
+    }
+  };
+
+  return (
+    <View style={styles.gameBox}>
       <View style={styles.progressRow}>
-        {QUIZ_QUESTIONS.map((_, i) => (
+        {questions.map((_, i) => (
           <View
             key={i}
             style={[
               styles.progressDot,
-              i < currentQ && styles.progressDotDone,
-              i === currentQ && styles.progressDotActive,
+              i < idx && { backgroundColor: lesson.color },
+              i === idx && { backgroundColor: lesson.color, width: 24 },
             ]}
           />
         ))}
       </View>
 
-      <Text style={styles.quizCounter}>
-        Question {currentQ + 1} of {QUIZ_QUESTIONS.length}
-      </Text>
+      <Text style={styles.quizEmoji}>{q.emoji}</Text>
       <Text style={styles.quizQuestion}>{q.question}</Text>
 
-      {q.options.map((opt, idx) => {
-        let optStyle = styles.optionBtn;
-        let optTextStyle = styles.optionText;
-
+      {q.options.map((opt, i) => {
+        let bg = "#FAFAFA";
+        let border = "#E0E0E0";
+        let color = "#2C2C2C";
         if (showResult) {
-          if (idx === q.correctIndex) {
-            optStyle = { ...styles.optionBtn, ...styles.optionCorrect };
-            optTextStyle = { ...styles.optionText, color: "#fff" };
-          } else if (idx === selected) {
-            optStyle = { ...styles.optionBtn, ...styles.optionWrong };
-            optTextStyle = { ...styles.optionText, color: "#fff" };
+          if (i === q.correctIndex) {
+            bg = "#4CAF7C";
+            border = "#4CAF7C";
+            color = "#fff";
+          } else if (i === selected) {
+            bg = "#E07B39";
+            border = "#E07B39";
+            color = "#fff";
           }
         }
-
         return (
           <TouchableOpacity
-            key={idx}
-            style={optStyle}
-            onPress={() => handleSelect(idx)}
+            key={i}
+            style={[styles.optionBtn, { backgroundColor: bg, borderColor: border }]}
+            onPress={() => handleSelect(i)}
             activeOpacity={showResult ? 1 : 0.7}
           >
-            <Text style={optTextStyle}>{opt}</Text>
+            <Text style={[styles.optionText, { color }]}>{opt}</Text>
           </TouchableOpacity>
         );
       })}
 
       {showResult && (
-        <View style={[styles.explanationBox, isCorrect ? styles.explanationCorrect : styles.explanationWrong]}>
-          <Text style={styles.explanationLabel}>{isCorrect ? "✅ Correct!" : "❌ Not quite!"}</Text>
+        <View
+          style={[
+            styles.explanationBox,
+            { backgroundColor: isCorrect ? "#E8F8EF" : "#FEF0E6" },
+          ]}
+        >
+          <Text style={styles.explanationLabel}>
+            {isCorrect ? "✅ Awesome!" : "❌ Not quite!"}
+          </Text>
           <Text style={styles.explanationText}>{q.explanation}</Text>
         </View>
       )}
 
       {showResult && (
-        <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
-          <Text style={styles.nextBtnText}>
-            {currentQ + 1 >= QUIZ_QUESTIONS.length ? "See Results" : "Next Question →"}
+        <TouchableOpacity
+          style={[styles.bigBtn, { backgroundColor: lesson.color }]}
+          onPress={handleNext}
+        >
+          <Text style={styles.bigBtnText}>
+            {idx + 1 >= questions.length ? "Finish! 🎉" : "Next →"}
           </Text>
         </TouchableOpacity>
       )}
@@ -296,415 +856,739 @@ function QuizSection() {
   );
 }
 
-// ── Main Screen ────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// LESSON COMPLETE SCREEN
+// ═══════════════════════════════════════════════════════════════════
 
-export default function LessonsScreen() {
+function LessonComplete({
+  lesson,
+  score,
+  total,
+  onHome,
+}: {
+  lesson: Lesson;
+  score: number;
+  total: number;
+  onHome: () => void;
+}) {
+  const pct = Math.round((score / total) * 100);
+  const stars = pct === 100 ? 3 : pct >= 75 ? 2 : pct >= 50 ? 1 : 0;
+
+  const bounce = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.spring(bounce, { toValue: 1, friction: 4, useNativeDriver: true }).start();
+  }, []);
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      {/* Header */}
-      <Text style={styles.title}>Lessons</Text>
-      <Text style={styles.subtitle}>Learn how money really works.</Text>
+    <View style={[styles.gameBox, { alignItems: "center" }]}>
+      <Animated.Text
+        style={[
+          styles.completeEmoji,
+          { transform: [{ scale: bounce.interpolate({ inputRange: [0, 1], outputRange: [0, 1] }) }] },
+        ]}
+      >
+        🎉
+      </Animated.Text>
+      <Text style={styles.completeTitle}>Lesson Complete!</Text>
 
-      {/* Lesson Card */}
-      <View style={styles.lessonCard}>
-        <View style={styles.lessonBadge}>
-          <Text style={styles.lessonBadgeText}>💳 Lesson 1</Text>
-        </View>
-        <Text style={styles.lessonTitle}>Credit vs. Debit</Text>
-        <Text style={styles.lessonBody}>
-          Both credit and debit cards look the same, but they work very differently. Knowing the
-          difference can save you from debt and help you make smarter money choices!
-        </Text>
-
-        {/* Quick Comparison */}
-        <View style={styles.compareRow}>
-          <View style={[styles.compareBox, styles.compareDebit]}>
-            <Text style={styles.compareEmoji}>🏦</Text>
-            <Text style={styles.compareLabel}>Debit</Text>
-            <Text style={styles.comparePoint}>Your own money</Text>
-            <Text style={styles.comparePoint}>Instant spending</Text>
-            <Text style={styles.comparePoint}>No interest</Text>
-            <Text style={styles.comparePoint}>Can't overspend</Text>
-          </View>
-          <View style={[styles.compareBox, styles.compareCredit]}>
-            <Text style={styles.compareEmoji}>💳</Text>
-            <Text style={styles.compareLabel}>Credit</Text>
-            <Text style={styles.comparePoint}>Borrowed money</Text>
-            <Text style={styles.comparePoint}>Pay later</Text>
-            <Text style={styles.comparePoint}>Interest if late</Text>
-            <Text style={styles.comparePoint}>Builds credit score</Text>
-          </View>
-        </View>
+      <View style={styles.starRow}>
+        {[1, 2, 3].map((i) => (
+          <Text key={i} style={[styles.star, { opacity: i <= stars ? 1 : 0.2 }]}>
+            ⭐
+          </Text>
+        ))}
       </View>
 
-      {/* Flip Cards Section */}
-      <Text style={styles.sectionHeader}>🔄 Tap to Learn</Text>
-      <Text style={styles.sectionSub}>Flip each card to discover key money terms</Text>
+      <Text style={styles.completeScore}>
+        {score} / {total} correct
+      </Text>
 
-      <FlatList
-        data={FLIP_CARDS}
-        keyExtractor={(item) => item.id}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.flipList}
-        renderItem={({ item }) => <FlipCard card={item} />}
-      />
-
-      {/* Real-World Examples */}
-      <Text style={styles.sectionHeader}>🌍 Real-World Examples</Text>
-
-      <View style={styles.exampleCard}>
-        <Text style={styles.exampleTitle}>🛒 Buying Groceries</Text>
-        <Text style={styles.exampleText}>
-          <Text style={styles.bold}>Debit: </Text>$30 leaves your account instantly. You always know
-          exactly what you have.{"\n"}
-          <Text style={styles.bold}>Credit: </Text>Bank pays the $30 now. You repay at end of month.
-          If you forget, you pay extra interest!
-        </Text>
-      </View>
-
-      <View style={styles.exampleCard}>
-        <Text style={styles.exampleTitle}>🚨 Emergency Car Repair</Text>
-        <Text style={styles.exampleText}>
-          <Text style={styles.bold}>Debit: </Text>You need $500 in your account right now or you're
-          stuck.{"\n"}
-          <Text style={styles.bold}>Credit: </Text>You can pay the $500 now and spread repayment over
-          time — useful in emergencies!
-        </Text>
-      </View>
-
-      {/* Quiz Section */}
-      <Text style={styles.sectionHeader}>🧠 Quiz Time!</Text>
-      <Text style={styles.sectionSub}>Test what you've learned</Text>
-
-      <QuizSection />
-
-      <View style={{ height: 32 }} />
-    </ScrollView>
+      <TouchableOpacity
+        style={[styles.bigBtn, { backgroundColor: lesson.color, marginTop: 20 }]}
+        onPress={onHome}
+      >
+        <Text style={styles.bigBtnText}>Back to Lessons 🏠</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
-// ── Styles ─────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// LESSON FLOW CONTROLLER
+// ═══════════════════════════════════════════════════════════════════
+
+type Stage = "story" | "game" | "quiz" | "complete";
+
+function LessonView({
+  lesson,
+  onBack,
+  bones,
+  setBones,
+}: {
+  lesson: Lesson;
+  onBack: () => void;
+  bones: number;
+  setBones: React.Dispatch<React.SetStateAction<number>>;
+}) {
+  const [stage, setStage] = useState<Stage>("story");
+  const [finalScore, setFinalScore] = useState({ score: 0, total: 0 });
+  const [mood, setMood] = useState<BucksMood>("idle");
+  const [coinTrigger, setCoinTrigger] = useState(0);
+
+  // Auto-return mood to idle after 2 seconds
+  useEffect(() => {
+    if (mood === "idle") return;
+    const t = setTimeout(() => setMood("idle"), 2000);
+    return () => clearTimeout(t);
+  }, [mood]);
+
+  const handleCorrect = () => {
+    setBones((b) => b + 1);
+    setMood("happy");
+    setCoinTrigger((t) => t + 1);
+  };
+
+  const handleWrong = () => {
+    setMood("sad");
+  };
+
+  const renderGame = () => {
+    switch (lesson.id) {
+      case "needs-wants":
+        return (
+          <NeedsWantsGame
+            onDone={() => setStage("quiz")}
+            onCorrect={handleCorrect}
+            onWrong={handleWrong}
+          />
+        );
+      case "borrowing":
+        return <CoinCounterGame onDone={() => setStage("quiz")} />;
+      case "growth":
+        return <GrowthRaceGame onDone={() => setStage("quiz")} />;
+    }
+  };
+
+  return (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: lesson.lightColor }]}>
+    <View style={{ flex: 1 }}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: lesson.lightColor }]}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Header */}
+      <View style={styles.lessonHeader}>
+        <TouchableOpacity onPress={onBack} style={styles.backBtn}>
+          <Text style={styles.backBtnText}>←</Text>
+        </TouchableOpacity>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.lessonHeaderNum, { color: lesson.color }]}>
+            Lesson {lesson.number}
+          </Text>
+          <Text style={styles.lessonHeaderTitle}>
+            {lesson.emoji} {lesson.title}
+          </Text>
+        </View>
+        <BoneCounter count={bones} />
+      </View>
+
+      {/* Stage indicator */}
+      <View style={styles.stageRow}>
+        {(["story", "game", "quiz"] as Stage[]).map((s, i) => {
+          const stageIdx = ["story", "game", "quiz", "complete"].indexOf(stage);
+          const active = i <= stageIdx;
+          return (
+            <View key={s} style={styles.stageItem}>
+              <View
+                style={[
+                  styles.stageCircle,
+                  { backgroundColor: active ? lesson.color : "#E0E0E0" },
+                ]}
+              >
+                <Text style={styles.stageCircleText}>
+                  {s === "story" ? "📖" : s === "game" ? "🎮" : "🧠"}
+                </Text>
+              </View>
+              {i < 2 && (
+                <View
+                  style={[
+                    styles.stageLine,
+                    { backgroundColor: i < stageIdx ? lesson.color : "#E0E0E0" },
+                  ]}
+                />
+              )}
+            </View>
+          );
+        })}
+      </View>
+
+      {stage === "story" && <StoryCarousel lesson={lesson} onDone={() => setStage("game")} />}
+      {stage === "game" && renderGame()}
+      {stage === "quiz" && (
+        <QuizGame
+          lesson={lesson}
+          onCorrect={handleCorrect}
+          onWrong={handleWrong}
+          onDone={(score, total) => {
+            setFinalScore({ score, total });
+            setStage("complete");
+            setMood("excited");
+          }}
+        />
+      )}
+      {stage === "complete" && (
+        <LessonComplete
+          lesson={lesson}
+          score={finalScore.score}
+          total={finalScore.total}
+          onHome={onBack}
+        />
+      )}
+
+      <View style={{ height: 40 }} />
+    </ScrollView>
+    <CoinRain trigger={coinTrigger} />
+    <BucksMascot mood={mood} />
+    </View>
+    </SafeAreaView>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MAIN SCREEN — Lesson Picker
+// ═══════════════════════════════════════════════════════════════════
+
+export default function LessonsScreen() {
+  const [selected, setSelected] = useState<Lesson | null>(null);
+  const [bones, setBones] = useState(0);
+
+  if (selected) {
+    return (
+      <LessonView
+        lesson={selected}
+        onBack={() => setSelected(null)}
+        bones={bones}
+        setBones={setBones}
+      />
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      {/* Title row with bone counter */}
+      <View style={styles.homeTitleRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>🦴 Bucks Academy</Text>
+          <Text style={styles.subtitle}>Pick a lesson to start!</Text>
+        </View>
+        <BoneCounter count={bones} />
+      </View>
+
+      {/* Bones earned banner */}
+      <View style={styles.bonesBanner}>
+        <Text style={styles.bonesBannerEmoji}>🦴</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.bonesBannerLabel}>Bones Collected</Text>
+          <Text style={styles.bonesBannerCount}>{bones}</Text>
+        </View>
+        <Text style={styles.bonesBannerMsg}>
+          {bones === 0
+            ? "Start a lesson to earn bones!"
+            : bones < 5
+            ? "Great start! 🐾"
+            : bones < 15
+            ? "You're on fire! 🔥"
+            : "Bucks is so proud! 🏆"}
+        </Text>
+      </View>
+
+      {LESSONS.map((lesson) => (
+        <TouchableOpacity
+          key={lesson.id}
+          style={[styles.lessonCard, { backgroundColor: lesson.lightColor }]}
+          onPress={() => setSelected(lesson)}
+          activeOpacity={0.85}
+        >
+          <View style={[styles.lessonIconBox, { backgroundColor: lesson.color }]}>
+            <Text style={styles.lessonIcon}>{lesson.emoji}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.lessonNum, { color: lesson.color }]}>
+              LESSON {lesson.number}
+            </Text>
+            <Text style={styles.lessonTitle}>{lesson.title}</Text>
+            <Text style={styles.lessonSubtitle}>{lesson.subtitle}</Text>
+          </View>
+          <Text style={[styles.playArrow, { color: lesson.color }]}>▶</Text>
+        </TouchableOpacity>
+      ))}
+
+      <View style={{ height: 40 }} />
+    </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// STYLES
+// ═══════════════════════════════════════════════════════════════════
 
 const ACCENT = colors.accent ?? "#D4A017";
 const ACCENT_LIGHT = colors.accentLight ?? "#FFF8E1";
-const DEBIT_COLOR = "#4CAF7C";
-const CREDIT_COLOR = "#E07B39";
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: ACCENT_LIGHT,
-  },
-  scrollContent: {
-    padding: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: ACCENT,
-  },
-  subtitle: {
-    marginTop: 4,
-    marginBottom: 16,
-    color: "#7C6A33",
-    fontSize: 14,
+  safeArea: { flex: 1, backgroundColor: ACCENT_LIGHT },
+  container: { flex: 1, backgroundColor: ACCENT_LIGHT },
+  scrollContent: { padding: 20, paddingTop: 24, flexGrow: 1 },
+
+  // Header
+  title: { fontSize: 36, fontWeight: "800", color: ACCENT, marginTop: 8 },
+  subtitle: { marginTop: 6, marginBottom: 16, color: "#7C6A33", fontSize: 17 },
+
+  // Home title row (title + bone counter)
+  homeTitleRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
 
-  // ── Lesson Card ──
-  lessonCard: {
+  // Bones earned banner (big, prominent card on home)
+  bonesBanner: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 18,
+    borderRadius: 20,
+    padding: 16,
     marginBottom: 20,
+    borderWidth: 2,
+    borderColor: ACCENT,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.08,
-    shadowRadius: 6,
+    shadowRadius: 8,
     elevation: 3,
   },
-  lessonBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: ACCENT_LIGHT,
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginBottom: 8,
-  },
-  lessonBadgeText: {
-    color: ACCENT,
-    fontWeight: "700",
-    fontSize: 12,
-  },
-  lessonTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#2C2C2C",
-    marginBottom: 8,
-  },
-  lessonBody: {
-    fontSize: 14,
-    color: "#555",
-    lineHeight: 21,
-    marginBottom: 16,
-  },
-  compareRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  compareBox: {
-    flex: 1,
-    borderRadius: 12,
-    padding: 12,
-    alignItems: "center",
-  },
-  compareDebit: {
-    backgroundColor: "#E8F8EF",
-  },
-  compareCredit: {
-    backgroundColor: "#FEF0E6",
-  },
-  compareEmoji: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  compareLabel: {
-    fontWeight: "800",
-    fontSize: 15,
-    marginBottom: 6,
-    color: "#2C2C2C",
-  },
-  comparePoint: {
-    fontSize: 12,
-    color: "#555",
-    marginBottom: 3,
-    textAlign: "center",
-  },
-
-  // ── Section Headers ──
-  sectionHeader: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#2C2C2C",
-    marginBottom: 4,
-  },
-  sectionSub: {
-    fontSize: 13,
-    color: "#7C6A33",
-    marginBottom: 12,
-  },
-
-  // ── Flip Cards ──
-  flipList: {
-    paddingBottom: 8,
-    paddingRight: 16,
-    marginBottom: 20,
-  },
-  flipWrapper: {
-    width: 180,
-    height: 200,
+  bonesBannerEmoji: {
+    fontSize: 40,
     marginRight: 12,
   },
-  flipCard: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-    borderRadius: 16,
+  bonesBannerLabel: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#7C6A33",
+    letterSpacing: 1,
+  },
+  bonesBannerCount: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: ACCENT,
+    marginTop: -2,
+  },
+  bonesBannerMsg: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#7C6A33",
+    maxWidth: 100,
+    textAlign: "right",
+  },
+
+  // Lesson picker cards
+  lessonCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 20,
     padding: 16,
+    marginBottom: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  lessonIconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    backfaceVisibility: "hidden",
+    marginRight: 14,
+  },
+  lessonIcon: { fontSize: 36 },
+  lessonNum: { fontSize: 11, fontWeight: "800", letterSpacing: 1 },
+  lessonTitle: { fontSize: 18, fontWeight: "800", color: "#2C2C2C", marginTop: 2 },
+  lessonSubtitle: { fontSize: 13, color: "#666", marginTop: 2 },
+  playArrow: { fontSize: 24, marginLeft: 8 },
+
+  // Lesson view header
+  lessonHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  backBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  flipFront: {
-    backgroundColor: ACCENT,
-  },
-  flipBack: {
-    backgroundColor: "#2C2C2C",
-  },
-  flipEmoji: {
-    fontSize: 32,
-    marginBottom: 10,
-  },
-  flipFrontText: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: "#fff",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  flipBackText: {
-    fontSize: 13,
-    color: "#fff",
-    textAlign: "center",
-    lineHeight: 19,
-    marginBottom: 8,
-  },
-  flipHint: {
-    fontSize: 11,
-    color: "rgba(255,255,255,0.6)",
-    fontStyle: "italic",
-  },
-
-  // ── Examples ──
-  exampleCard: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
-    borderLeftWidth: 4,
-    borderLeftColor: ACCENT,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
   },
-  exampleTitle: {
-    fontWeight: "700",
-    fontSize: 15,
-    color: "#2C2C2C",
-    marginBottom: 6,
-  },
-  exampleText: {
-    fontSize: 13,
-    color: "#555",
-    lineHeight: 20,
-  },
-  bold: {
-    fontWeight: "700",
-    color: "#2C2C2C",
-  },
+  backBtnText: { fontSize: 22, fontWeight: "800", color: "#2C2C2C" },
+  lessonHeaderNum: { fontSize: 12, fontWeight: "800", letterSpacing: 1 },
+  lessonHeaderTitle: { fontSize: 20, fontWeight: "800", color: "#2C2C2C" },
 
-  // ── Quiz ──
-  quizBox: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 18,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
+  // Stage progress
+  stageRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
   },
-  progressRow: {
+  stageItem: { flexDirection: "row", alignItems: "center" },
+  stageCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stageCircleText: { fontSize: 20 },
+  stageLine: { width: 32, height: 4, marginHorizontal: 4, borderRadius: 2 },
+
+  // Story carousel
+  storyBox: {
+    borderRadius: 28,
+    padding: 28,
+    alignItems: "center",
+    minHeight: 480,
+    justifyContent: "space-between",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  storyDots: {
     flexDirection: "row",
     gap: 6,
     marginBottom: 12,
   },
+  storyDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#E0E0E0",
+  },
+  storyEmoji: { fontSize: 140, marginVertical: 12 },
+  storyText: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#2C2C2C",
+    textAlign: "center",
+    lineHeight: 32,
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+
+  // Big button (shared)
+  bigBtn: {
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    alignItems: "center",
+    alignSelf: "stretch",
+    marginTop: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  bigBtnText: { color: "#fff", fontWeight: "800", fontSize: 17 },
+
+  // Game box (shared)
+  gameBox: {
+    backgroundColor: "#fff",
+    borderRadius: 28,
+    padding: 24,
+    minHeight: 480,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  gameTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#2C2C2C",
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  gameSubtitle: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  gameCounter: {
+    fontSize: 13,
+    color: "#7C6A33",
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  gameDoneEmoji: { fontSize: 64, textAlign: "center", marginBottom: 8 },
+  gameDoneTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#2C2C2C",
+    textAlign: "center",
+    marginBottom: 6,
+  },
+  gameDoneScore: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+
+  // Needs/wants sort game
+  sortCard: {
+    backgroundColor: "#FAFAFA",
+    borderWidth: 3,
+    borderColor: "#E0E0E0",
+    borderRadius: 20,
+    paddingVertical: 28,
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  sortEmoji: { fontSize: 72, marginBottom: 8 },
+  sortLabel: { fontSize: 22, fontWeight: "800", color: "#2C2C2C" },
+  sortFeedback: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#2C2C2C",
+    marginTop: 8,
+  },
+  sortBtnRow: { flexDirection: "row", gap: 12 },
+  sortBtn: {
+    flex: 1,
+    borderRadius: 16,
+    paddingVertical: 20,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  sortBtnEmoji: { fontSize: 32, marginBottom: 4 },
+  sortBtnText: { color: "#fff", fontSize: 18, fontWeight: "800" },
+
+  // Coin counter game
+  counterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 14,
+  },
+  counterLabel: { fontSize: 15, fontWeight: "700", color: "#2C2C2C" },
+  counterControls: { flexDirection: "row", alignItems: "center", gap: 10 },
+  counterBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#E07B39",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  counterBtnText: { color: "#fff", fontSize: 24, fontWeight: "800" },
+  counterValue: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#2C2C2C",
+    minWidth: 60,
+    textAlign: "center",
+  },
+  resultBox: {
+    backgroundColor: "#FEF0E6",
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  resultRow: { fontSize: 15, color: "#2C2C2C", marginBottom: 8 },
+  resultValue: { fontWeight: "800", color: "#E07B39" },
+  resultDivider: { height: 1, backgroundColor: "#E0C4A8", marginVertical: 8 },
+  resultBig: { fontSize: 20, fontWeight: "800", color: "#2C2C2C" },
+  tipText: {
+    fontSize: 13,
+    color: "#666",
+    fontStyle: "italic",
+    textAlign: "center",
+    marginBottom: 12,
+  },
+
+  // Growth race game
+  yearBadge: {
+    alignSelf: "center",
+    backgroundColor: "#6C63FF",
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 6,
+    marginBottom: 16,
+  },
+  yearBadgeText: { color: "#fff", fontWeight: "800", fontSize: 16 },
+  barLabelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 4,
+    marginTop: 8,
+  },
+  barLabel: { fontSize: 15, fontWeight: "700", color: "#2C2C2C" },
+  barValue: { fontSize: 15, fontWeight: "800", color: "#2C2C2C" },
+  barTrack: {
+    height: 24,
+    backgroundColor: "#F0F0F0",
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 4,
+  },
+  barFill: { height: "100%", borderRadius: 12 },
+  yearControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  fastForwardBtn: {
+    backgroundColor: "#6C63FF",
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  fastForwardText: { color: "#fff", fontWeight: "800", fontSize: 15 },
+
+  // Quiz
+  progressRow: { flexDirection: "row", gap: 6, marginBottom: 16, justifyContent: "center" },
   progressDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
     backgroundColor: "#E0E0E0",
   },
-  progressDotDone: {
-    backgroundColor: DEBIT_COLOR,
-  },
-  progressDotActive: {
-    backgroundColor: ACCENT,
-    width: 24,
-    borderRadius: 5,
-  },
-  quizCounter: {
-    fontSize: 12,
-    color: "#7C6A33",
-    fontWeight: "600",
-    marginBottom: 6,
-  },
+  quizEmoji: { fontSize: 64, textAlign: "center", marginBottom: 8 },
   quizQuestion: {
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: 18,
+    fontWeight: "800",
     color: "#2C2C2C",
-    marginBottom: 14,
-    lineHeight: 22,
+    textAlign: "center",
+    marginBottom: 16,
+    lineHeight: 24,
   },
   optionBtn: {
     borderWidth: 2,
-    borderColor: "#E0E0E0",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    backgroundColor: "#FAFAFA",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
   },
-  optionText: {
-    fontSize: 14,
-    color: "#2C2C2C",
-  },
-  optionCorrect: {
-    backgroundColor: DEBIT_COLOR,
-    borderColor: DEBIT_COLOR,
-  },
-  optionWrong: {
-    backgroundColor: CREDIT_COLOR,
-    borderColor: CREDIT_COLOR,
-  },
-  explanationBox: {
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 4,
-    marginBottom: 12,
-  },
-  explanationCorrect: {
-    backgroundColor: "#E8F8EF",
-  },
-  explanationWrong: {
-    backgroundColor: "#FEF0E6",
-  },
+  optionText: { fontSize: 16, fontWeight: "700", textAlign: "center" },
+  explanationBox: { borderRadius: 14, padding: 14, marginTop: 4, marginBottom: 12 },
   explanationLabel: {
-    fontWeight: "700",
-    fontSize: 14,
+    fontWeight: "800",
+    fontSize: 15,
     marginBottom: 4,
     color: "#2C2C2C",
   },
-  explanationText: {
-    fontSize: 13,
-    color: "#555",
-    lineHeight: 19,
-  },
-  nextBtn: {
-    backgroundColor: ACCENT,
-    borderRadius: 12,
-    padding: 14,
-    alignItems: "center",
-    marginTop: 4,
-  },
-  nextBtnText: {
-    color: "#fff",
-    fontWeight: "800",
-    fontSize: 15,
-  },
+  explanationText: { fontSize: 14, color: "#555", lineHeight: 20 },
 
-  // ── Finished ──
-  finishedBox: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 24,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  finishedEmoji: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  finishedTitle: {
-    fontSize: 22,
+  // Complete screen
+  completeEmoji: { fontSize: 80, marginBottom: 12 },
+  completeTitle: {
+    fontSize: 26,
     fontWeight: "800",
     color: "#2C2C2C",
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  finishedScore: {
-    fontSize: 15,
-    color: "#555",
-    marginBottom: 20,
+  starRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
+  star: { fontSize: 48 },
+  completeScore: { fontSize: 18, color: "#666", fontWeight: "700" },
+
+  // ── Bone counter (header badge) ──
+  boneCounter: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  boneCounterEmoji: { fontSize: 18, marginRight: 4 },
+  boneCounterText: { fontSize: 16, fontWeight: "800", color: "#2C2C2C" },
+
+  // ── Bucks mascot (bottom-right) ──
+  mascotWrap: {
+    position: "absolute",
+    bottom: 16,
+    right: 16,
+    alignItems: "flex-end",
+  },
+  mascotEmoji: { fontSize: 56 },
+  speechBubble: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginBottom: 4,
+    maxWidth: 160,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  speechText: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#2C2C2C",
     textAlign: "center",
+  },
+  speechTail: {
+    position: "absolute",
+    bottom: -6,
+    right: 20,
+    width: 12,
+    height: 12,
+    backgroundColor: "#fff",
+    transform: [{ rotate: "45deg" }],
+  },
+
+  // ── Coin rain overlay ──
+  coinRainWrap: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  coin: {
+    position: "absolute",
+    top: 0,
+    fontSize: 32,
   },
 });
