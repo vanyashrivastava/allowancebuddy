@@ -1,6 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -8,356 +7,270 @@ import {
   Animated,
   Modal,
   Dimensions,
+  ImageBackground,
+  SafeAreaView,
 } from "react-native";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
-const lessonStages = [
+// ── Landmark nodes — positions as % of screen width/height ─────────
+// Tweak xPct/yPct if nodes are slightly off on your device
+const landmarks = [
   {
     id: 0,
-    emoji: "🦴",
-    title: "Earn Your Treats",
-    subtitle: "How to get your allowance",
-    desc: "You earn treats (money!) by doing chores and being helpful. The more you help, the more treats you get!",
-    funFact: "🐾 Did you know? Dogs love treats — just like you love earning money!",
-    color: "#FFD166",
-    align: "left",
+    name: "Chores Camp",
+    emoji: "⛺",
+    color: "#F59E0B",
+    reward: "5 Bones earned!",
+    message: "You showed up and did the work. That's how it starts! 🐾",
+    xPct: 0.20,
+    yPct: 0.40,
   },
   {
     id: 1,
-    emoji: "🦴",
-    title: "Save Some Bones",
-    subtitle: "Saving = treats for later",
-    desc: "Put some of your treats away in a special bowl. You can use them later for something really big — like a new toy!",
-    funFact: "🐾 A dog that buries its bone is saving for later. Smart pup!",
-    color: "#06D6A0",
-    align: "right",
+    name: "Investing Pond",
+    emoji: "🪙",
+    color: "#3B82F6",
+    reward: "10 Bones earned!",
+    message: "Your treats are growing in the pond. Magic! 🌊",
+    xPct: 0.72,
+    yPct: 0.76,
   },
   {
     id: 2,
-    emoji: "🦴",
-    title: "Spend Wisely",
-    subtitle: "Use treats for fun things",
-    desc: "It's okay to use some treats now! Just make sure you don't spend ALL your treats at once — always keep some in your bowl.",
-    funFact: "🐾 Even puppies know not to eat all their food at once!",
-    color: "#118AB2",
-    align: "left",
+    name: "Toy Shop",
+    emoji: "🧸",
+    color: "#EF4444",
+    reward: "8 Bones earned!",
+    message: "You spent wisely and still had bones left over! 🛍️",
+    xPct: 0.47,
+    yPct: 0.55,
   },
   {
     id: 3,
-    emoji: "🦴",
-    title: "Grow Your Treats",
-    subtitle: "Investing = magic treats",
-    desc: "When you invest, your treats grow all by themselves! Give 10 treats today, and later you'll have 12, then 15, then even more!",
-    funFact: "🐾 This is called Compound Interest — it's like treat magic! 🪄",
-    color: "#9B5DE5",
-    align: "right",
+    name: "Savings Cave",
+    emoji: "🏦",
+    color: "#8B5CF6",
+    reward: "12 Bones earned!",
+    message: "Your savings are safe in the cave. Smart pup! 💰",
+    xPct: 0.72,
+    yPct: 0.42,
   },
   {
     id: 4,
-    emoji: "🏠",
-    title: "Kennel House!",
-    subtitle: "You're a Finance Pup! 🎉",
-    desc: "You've learned how to earn, save, spend, and invest. You're ready to be a smart money dog! Paula Paw is proud of you.",
-    funFact: "🐾 Woof woof! You did it! Ask your parents to unlock your next adventure!",
-    color: "#EF476F",
-    align: "center",
+    name: "Woodland Hut",
+    emoji: "🌲",
+    color: "#22C55E",
+    reward: "15 Bones earned!",
+    message: "You made it through the woods. Almost there! 🌿",
+    xPct: 0.20,
+    yPct: 0.18,
+  },
+  {
+    id: 5,
+    name: "Castle Kennel",
+    emoji: "🏰",
+    color: "#EC4899",
+    reward: "20 Bones + Crown! 👑",
+    message: "You reached the Castle Kennel! You're a Finance Pup champion! 🎉",
+    xPct: 0.50,
+    yPct: 0.08,
   },
 ];
 
-const alignX = { left: 0.15, center: 0.5, right: 0.82 };
+const NODE_SIZE = 56;
+const MAP_HEIGHT = height * 0.82;
 
 export default function RewardScreen() {
-  const [currentStage, setCurrentStage] = useState(1);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedStage, setSelectedStage] = useState(lessonStages[0]);
+  const [completed, setCompleted] = useState<number[]>([]);
+  const [modalData, setModalData] = useState<typeof landmarks[0] | null>(null);
+  const [showModal, setShowModal] = useState(false);
 
-  const dogAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnims = useRef(lessonStages.map(() => new Animated.Value(1))).current;
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const bounceAnims = useRef(landmarks.map(() => new Animated.Value(1))).current;
 
-  useEffect(() => {
-    const pulse = Animated.loop(
+  const openModal = (landmark: typeof landmarks[0]) => {
+    setModalData(landmark);
+    setShowModal(true);
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      tension: 120,
+      friction: 7,
+    }).start();
+  };
+
+  const handleComplete = () => {
+    if (modalData && !completed.includes(modalData.id)) {
+      const id = modalData.id;
+      setCompleted((prev) => [...prev, id]);
       Animated.sequence([
-        Animated.timing(pulseAnims[currentStage], {
-          toValue: 1.18,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnims[currentStage], {
-          toValue: 1,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, [currentStage]);
-
-  useEffect(() => {
-    Animated.sequence([
-      Animated.timing(dogAnim, { toValue: -16, duration: 180, useNativeDriver: true }),
-      Animated.timing(dogAnim, { toValue: 0, duration: 180, useNativeDriver: true }),
-    ]).start();
-  }, [currentStage]);
-
-  const openLesson = (stage: typeof lessonStages[0]) => {
-    if (stage.id > currentStage) return;
-    setSelectedStage(stage);
-    setModalVisible(true);
-  };
-
-  const completeLesson = () => {
-    setModalVisible(false);
-    if (currentStage < lessonStages.length - 1) {
-      setCurrentStage((prev) => prev + 1);
+        Animated.timing(bounceAnims[id], { toValue: 1.5, duration: 180, useNativeDriver: true }),
+        Animated.spring(bounceAnims[id], { toValue: 1, useNativeDriver: true }),
+      ]).start();
     }
+    closeModal();
   };
 
-  const isCompleted = (id: number) => id < currentStage;
-  const isActive = (id: number) => id === currentStage;
-  const isLocked = (id: number) => id > currentStage;
+  const closeModal = () => {
+    Animated.timing(scaleAnim, {
+      toValue: 0,
+      duration: 160,
+      useNativeDriver: true,
+    }).start(() => setShowModal(false));
+  };
 
-  const progressPercent = (currentStage / (lessonStages.length - 1)) * 100;
+  const isDone = (id: number) => completed.includes(id);
 
   return (
-    <View style={styles.root}>
-      {/* Header */}
+    <SafeAreaView style={styles.root}>
+      {/* ── Header ── */}
       <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.headerTitle}>🎁 Rewards</Text>
-            <Text style={styles.headerSub}>Follow the bones to the kennel 🐾</Text>
-          </View>
-          {/* Bones counter pill */}
-          <View style={styles.bonesPill}>
-            <Text style={styles.bonesPillEmoji}>🦴</Text>
-            <Text style={styles.bonesPillText}>{currentStage}</Text>
-          </View>
+        <View>
+          <Text style={styles.headerTitle}>🎁 Rewards</Text>
+          <Text style={styles.headerSub}>Tap a stop to collect your bones!</Text>
         </View>
-
-        {/* Progress bar */}
-        <View style={styles.progressTrack}>
-          <Animated.View
-            style={[styles.progressFill, { width: `${progressPercent}%` }]}
-          />
+        <View style={styles.bonesPill}>
+          <Text style={styles.bonesPillEmoji}>🦴</Text>
+          <Text style={styles.bonesPillCount}>{completed.length}</Text>
+          <Text style={styles.bonesPillLabel}>/{landmarks.length}</Text>
         </View>
-        <Text style={styles.progressLabel}>
-          {currentStage}/{lessonStages.length - 1} bones found
-        </Text>
       </View>
 
-      {/* Map */}
-      <ScrollView
-        contentContainerStyle={[
-          styles.mapContainer,
-          { height: lessonStages.length * 120 + 80 },
-        ]}
-        showsVerticalScrollIndicator={false}
+      {/* ── Map ── */}
+      <ImageBackground
+        source={require("../../assets/RewardsBG.png")}
+        style={styles.mapBg}
+        resizeMode="cover"
       >
-        {/* Paw print connectors */}
-        {lessonStages.slice(0, -1).map((stage, i) => {
-          const next = lessonStages[i + 1];
-          const x1 = alignX[stage.align as keyof typeof alignX] * width;
-          const x2 = alignX[next.align as keyof typeof alignX] * width;
-          const y1 = i * 120 + 60;
-          const y2 = (i + 1) * 120;
-          const done = i < currentStage;
-          return (
-            <View
-              key={`conn-${i}`}
-              style={{
-                position: "absolute",
-                left: Math.min(x1, x2) - 2 + 28,
-                top: y1,
-                width: Math.abs(x2 - x1),
-                height: y2 - y1,
-              }}
-            >
-              {[0.3, 0.65].map((frac) => (
-                <Text
-                  key={frac}
-                  style={{
-                    position: "absolute",
-                    left: frac * Math.abs(x2 - x1) - 8,
-                    top: frac * (y2 - y1) - 8,
-                    fontSize: 13,
-                    opacity: done ? 0.85 : 0.2,
-                  }}
-                >
-                  🐾
-                </Text>
-              ))}
-            </View>
-          );
-        })}
-
-        {/* Stage nodes */}
-        {lessonStages.map((stage, i) => {
-          const x = alignX[stage.align as keyof typeof alignX] * width - 32;
-          const y = i * 120;
-          const completed = isCompleted(stage.id);
-          const active = isActive(stage.id);
-          const locked = isLocked(stage.id);
+        {landmarks.map((lm, i) => {
+          const done = isDone(lm.id);
+          const nodeLeft = lm.xPct * width - NODE_SIZE / 2;
+          const nodeTop = lm.yPct * MAP_HEIGHT - NODE_SIZE / 2;
 
           return (
             <Animated.View
-              key={stage.id}
+              key={lm.id}
               style={[
                 styles.nodeWrapper,
-                {
-                  left: x,
-                  top: y,
-                  transform: [
-                    { scale: active ? pulseAnims[i] : 1 },
-                    { translateY: active ? dogAnim : 0 },
-                  ],
-                },
+                { left: nodeLeft, top: nodeTop },
+                { transform: [{ scale: bounceAnims[i] }] },
               ]}
             >
               <Pressable
-                onPress={() => openLesson(stage)}
+                onPress={() => openModal(lm)}
                 style={[
                   styles.node,
-                  completed && {
-                    backgroundColor: stage.color,
-                    borderColor: stage.color,
-                    shadowColor: stage.color,
-                    shadowOpacity: 0.3,
-                    shadowRadius: 8,
-                    elevation: 6,
-                  },
-                  active && {
-                    backgroundColor: stage.color,
-                    borderColor: stage.color,
-                    shadowColor: stage.color,
-                    shadowOpacity: 0.55,
-                    shadowRadius: 14,
-                    elevation: 10,
-                  },
-                  locked && styles.nodeLocked,
+                  { borderColor: lm.color },
+                  done && { backgroundColor: lm.color },
                 ]}
               >
-                <Text style={[styles.nodeEmoji, locked && { opacity: 0.3 }]}>
-                  {completed ? "✅" : locked ? "🔒" : stage.emoji}
+                <Text style={styles.nodeEmoji}>
+                  {done ? "✅" : lm.emoji}
                 </Text>
               </Pressable>
-
-              {active && (
-                <Text style={styles.dogMarker}>🐶</Text>
-              )}
-
-              <View
-                style={[
-                  styles.labelBox,
-                  stage.align === "right" && { alignItems: "flex-end" },
-                  stage.align === "center" && { alignItems: "center" },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.labelText,
-                    completed && { color: "#1F4D3F" },
-                    active && { color: "#1F4D3F", fontWeight: "800" },
-                    locked && { color: "#B0CFC5" },
-                  ]}
-                >
-                  {stage.title}
+              <View style={[
+                styles.nodeTag,
+                { backgroundColor: done ? lm.color : "rgba(255,255,255,0.93)" },
+              ]}>
+                <Text style={[styles.nodeTagText, done && { color: "#fff" }]}>
+                  {lm.name}
                 </Text>
-                {(completed || active) && (
-                  <Text style={styles.labelSub}>{stage.subtitle}</Text>
-                )}
               </View>
             </Animated.View>
           );
         })}
-      </ScrollView>
+      </ImageBackground>
 
-      {/* Lesson Modal */}
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-      >
+      {/* ── Modal ── */}
+      <Modal visible={showModal} transparent animationType="none">
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { borderTopColor: selectedStage.color }]}>
-            {/* Colored top accent */}
-            <View style={[styles.modalIconCircle, { backgroundColor: selectedStage.color + "22" }]}>
-              <Text style={styles.modalEmoji}>{selectedStage.emoji}</Text>
-            </View>
+          <Animated.View
+            style={[
+              styles.modalCard,
+              modalData && { borderTopColor: modalData.color },
+              { transform: [{ scale: scaleAnim }] },
+            ]}
+          >
+            {modalData && (
+              <>
+                <View style={[styles.iconCircle, { backgroundColor: modalData.color + "22" }]}>
+                  <Text style={styles.modalEmoji}>
+                    {isDone(modalData.id) ? "✅" : modalData.emoji}
+                  </Text>
+                </View>
 
-            <Text style={styles.modalTitle}>{selectedStage.title}</Text>
-            <Text style={styles.modalSub}>{selectedStage.subtitle}</Text>
+                <Text style={styles.modalTitle}>{modalData.name}</Text>
 
-            <View style={styles.modalBody}>
-              <Text style={styles.modalDesc}>{selectedStage.desc}</Text>
-            </View>
+                {isDone(modalData.id) ? (
+                  <>
+                    <Text style={styles.alreadyDone}>Already collected! 🎉</Text>
+                    <Text style={styles.rewardText}>{modalData.reward}</Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.modalMessage}>{modalData.message}</Text>
+                    <View style={[styles.rewardBadge, { backgroundColor: modalData.color + "22" }]}>
+                      <Text style={[styles.rewardBadgeText, { color: modalData.color }]}>
+                        🦴 {modalData.reward}
+                      </Text>
+                    </View>
+                    <Pressable
+                      style={[styles.collectBtn, { backgroundColor: modalData.color }]}
+                      onPress={handleComplete}
+                    >
+                      <Text style={styles.collectBtnText}>Collect Reward! 🎉</Text>
+                    </Pressable>
+                  </>
+                )}
 
-            <View style={[styles.funFactBox, { borderLeftColor: selectedStage.color }]}>
-              <Text style={styles.funFactText}>{selectedStage.funFact}</Text>
-            </View>
-
-            <Pressable
-              style={[styles.modalBtn, { backgroundColor: selectedStage.color }]}
-              onPress={completeLesson}
-            >
-              <Text style={styles.modalBtnText}>
-                {selectedStage.id === currentStage && currentStage < lessonStages.length - 1
-                  ? "Got it! Next Bone 🦴"
-                  : selectedStage.id === lessonStages.length - 1
-                  ? "Woof! I'm done! 🏠"
-                  : "Review again"}
-              </Text>
-            </Pressable>
-
-            <Pressable style={styles.modalClose} onPress={() => setModalVisible(false)}>
-              <Text style={styles.modalCloseText}>Close</Text>
-            </Pressable>
-          </View>
+                <Pressable style={styles.closeBtn} onPress={closeModal}>
+                  <Text style={styles.closeBtnText}>
+                    {isDone(modalData.id) ? "Close" : "Maybe later"}
+                  </Text>
+                </Pressable>
+              </>
+            )}
+          </Animated.View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
-
-const NODE_SIZE = 64;
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#F0FAF4",
+    backgroundColor: "#1A3D34",
   },
 
-  // ── Header ──────────────────────────────────────────────
+  // Header
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 52,
-    paddingBottom: 16,
-    backgroundColor: "#fff",
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-    shadowColor: "#000",
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 14,
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    backgroundColor: "#fff",
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 5,
+    zIndex: 10,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "800",
     color: "#1F4D3F",
     letterSpacing: -0.5,
   },
   headerSub: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#5A9E8A",
     marginTop: 2,
+    fontWeight: "600",
   },
   bonesPill: {
     flexDirection: "row",
@@ -366,43 +279,30 @@ const styles = StyleSheet.create({
     borderRadius: 99,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    gap: 6,
     borderWidth: 1.5,
     borderColor: "#C8E8D8",
+    gap: 4,
   },
-  bonesPillEmoji: {
+  bonesPillEmoji: { fontSize: 18 },
+  bonesPillCount: {
     fontSize: 18,
-  },
-  bonesPillText: {
-    fontSize: 18,
-    fontWeight: "800",
+    fontWeight: "900",
     color: "#1F4D3F",
   },
-  progressTrack: {
-    height: 10,
-    backgroundColor: "#E0F0E8",
-    borderRadius: 99,
-    overflow: "hidden",
-    marginBottom: 6,
-  },
-  progressFill: {
-    height: "100%",
-    backgroundColor: "#06D6A0",
-    borderRadius: 99,
-  },
-  progressLabel: {
-    fontSize: 12,
+  bonesPillLabel: {
+    fontSize: 14,
     color: "#5A9E8A",
-    textAlign: "right",
     fontWeight: "600",
   },
 
-  // ── Map ─────────────────────────────────────────────────
-  mapContainer: {
+  // Map
+  mapBg: {
+    flex: 1,
+    width: "100%",
     position: "relative",
-    marginTop: 24,
-    paddingHorizontal: 0,
   },
+
+  // Nodes
   nodeWrapper: {
     position: "absolute",
     alignItems: "center",
@@ -412,135 +312,117 @@ const styles = StyleSheet.create({
     width: NODE_SIZE,
     height: NODE_SIZE,
     borderRadius: NODE_SIZE / 2,
-    backgroundColor: "#fff",
-    borderWidth: 3,
-    borderColor: "#D0E8D8",
+    backgroundColor: "rgba(255,255,255,0.92)",
+    borderWidth: 3.5,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 8,
+  },
+  nodeEmoji: { fontSize: 26 },
+  nodeTag: {
+    marginTop: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
     elevation: 3,
+    maxWidth: 90,
   },
-  nodeLocked: {
-    backgroundColor: "#F0F7F3",
-    borderColor: "#D0E8D8",
-  },
-  nodeEmoji: {
-    fontSize: 28,
-  },
-  dogMarker: {
-    fontSize: 22,
-    position: "absolute",
-    top: -28,
-  },
-  labelBox: {
-    marginTop: 8,
-    maxWidth: 100,
-    alignItems: "flex-start",
-  },
-  labelText: {
-    fontSize: 12,
-    fontWeight: "700",
+  nodeTagText: {
+    fontSize: 9,
+    fontWeight: "800",
     color: "#1F4D3F",
     textAlign: "center",
   },
-  labelSub: {
-    fontSize: 10,
-    color: "#5A9E8A",
-    textAlign: "center",
-    marginTop: 1,
-  },
 
-  // ── Modal ───────────────────────────────────────────────
+  // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-end",
   },
   modalCard: {
     backgroundColor: "#fff",
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
-    padding: 24,
-    paddingBottom: 44,
+    padding: 28,
+    paddingBottom: 48,
     borderTopWidth: 5,
     alignItems: "center",
   },
-  modalIconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  iconCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 12,
+    marginBottom: 14,
   },
-  modalEmoji: {
-    fontSize: 44,
-  },
+  modalEmoji: { fontSize: 48 },
   modalTitle: {
     fontSize: 24,
-    fontWeight: "800",
+    fontWeight: "900",
     color: "#1F4D3F",
     textAlign: "center",
-    letterSpacing: -0.3,
+    letterSpacing: -0.5,
+    marginBottom: 10,
   },
-  modalSub: {
-    fontSize: 13,
-    color: "#5A9E8A",
-    marginTop: 3,
-    marginBottom: 16,
+  modalMessage: {
+    fontSize: 15,
+    color: "#3C7A6A",
     textAlign: "center",
+    lineHeight: 23,
+    marginBottom: 16,
+    paddingHorizontal: 10,
+  },
+  alreadyDone: {
+    fontSize: 15,
+    color: "#5A9E8A",
+    textAlign: "center",
+    marginBottom: 8,
     fontWeight: "600",
   },
-  modalBody: {
-    backgroundColor: "#F0FAF4",
-    borderRadius: 16,
-    padding: 16,
-    width: "100%",
-    marginBottom: 12,
-  },
-  modalDesc: {
+  rewardText: {
     fontSize: 15,
     color: "#1F4D3F",
-    lineHeight: 24,
+    fontWeight: "700",
     textAlign: "center",
+    marginBottom: 16,
   },
-  funFactBox: {
-    width: "100%",
-    borderLeftWidth: 4,
-    paddingLeft: 14,
+  rewardBadge: {
+    borderRadius: 14,
+    paddingHorizontal: 20,
     paddingVertical: 10,
     marginBottom: 22,
-    backgroundColor: "#F7FDFB",
-    borderRadius: 10,
   },
-  funFactText: {
-    fontSize: 13,
-    color: "#335F53",
-    fontStyle: "italic",
-    lineHeight: 20,
+  rewardBadgeText: {
+    fontSize: 16,
+    fontWeight: "800",
+    textAlign: "center",
   },
-  modalBtn: {
+  collectBtn: {
     width: "100%",
     paddingVertical: 16,
-    borderRadius: 16,
+    borderRadius: 18,
     alignItems: "center",
-    marginBottom: 10,
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    marginBottom: 12,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
     elevation: 4,
   },
-  modalBtnText: {
+  collectBtnText: {
     color: "#fff",
-    fontWeight: "800",
-    fontSize: 16,
-    letterSpacing: 0.2,
+    fontWeight: "900",
+    fontSize: 17,
   },
-  modalClose: {
-    paddingVertical: 8,
-  },
-  modalCloseText: {
+  closeBtn: { paddingVertical: 8 },
+  closeBtnText: {
     color: "#AAC4BA",
     fontSize: 14,
     fontWeight: "600",
