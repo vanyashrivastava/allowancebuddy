@@ -9,6 +9,7 @@ import ChildHomeScreen from "../screens/ChildHomeScreen";
 import ParentDashboardScreen from "../screens/ParentDashboardScreen";
 import RewardsScreen from "../screens/RewardScreen";
 import LessonsScreen from "../screens/LessonsScreen";
+import TeacherScreen from "../screens/TeachersScreen";
 import colors from "../theme/colors";
 
 // Import the parent dashboard icon
@@ -20,6 +21,7 @@ export type RootTabParamList = {
   Parent: undefined;
   Rewards: undefined;
   Lessons: undefined;
+  Teacher: undefined;
 };
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -53,6 +55,16 @@ export default function AppNavigation() {
         />
         <Tab.Screen name="Rewards" component={RewardsScreen} />
         <Tab.Screen name="Lessons" component={LessonsScreen} />
+        <Tab.Screen name="Teacher" component={TeacherScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+            <Image
+           source={require("../../assets/TeachersBG.png")}
+          style={{ width: size, height: size, tintColor: color }}
+      />
+    ),
+  }}
+/>
       </Tab.Navigator>
     </NavigationContainer>
   );
