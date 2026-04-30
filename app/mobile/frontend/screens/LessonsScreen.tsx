@@ -906,7 +906,7 @@ function LessonView({
   return (
     <ImageBackground source={require("../../assets/LessonsBG.png")} style={{ flex: 1 }} resizeMode="cover">
       <SafeAreaView style={[styles.safeArea, { backgroundColor: "transparent" }]}>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minWidth: 120 }}>
           <ScrollView
             style={[styles.container]}
             contentContainerStyle={styles.scrollContent}
