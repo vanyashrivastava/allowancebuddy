@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import {
   Animated,
   Easing,
+  ImageBackground,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -9,11 +10,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import colors from "../theme/colors";
 
 // ═══════════════════════════════════════════════════════════════════
 // BUCKS FINANCIAL LITERACY — Lessons for ages 7–9
-// 3 lessons, each with: story cards → mini-game → quiz
 // ═══════════════════════════════════════════════════════════════════
 
 type LessonId = "needs-wants" | "borrowing" | "growth";
@@ -59,7 +58,7 @@ const LESSONS: Lesson[] = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════
-// BUCKS MASCOT — reacts to what the kid is doing
+// BUCKS MASCOT
 // ═══════════════════════════════════════════════════════════════════
 
 type BucksMood = "idle" | "happy" | "sad" | "excited" | "thinking";
@@ -85,15 +84,10 @@ function BucksMascot({ mood }: { mood: BucksMood }) {
   const [line, setLine] = useState("");
 
   useEffect(() => {
-    // Pick a random line for this mood
     const lines = BUCKS_LINES[mood];
     setLine(lines[Math.floor(Math.random() * lines.length)]);
-
-    // Bounce animation
     bounce.setValue(0);
-    Animated.sequence([
-      Animated.spring(bounce, { toValue: 1, friction: 4, useNativeDriver: true }),
-    ]).start();
+    Animated.spring(bounce, { toValue: 1, friction: 4, useNativeDriver: true }).start();
   }, [mood]);
 
   const scale = bounce.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] });
@@ -115,12 +109,10 @@ function BucksMascot({ mood }: { mood: BucksMood }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// COIN RAIN — fires on correct answers
-// Renders 8 coins that fall from top with staggered timing
+// COIN RAIN
 // ═══════════════════════════════════════════════════════════════════
 
 function CoinRain({ trigger }: { trigger: number }) {
-  // 8 coins, each with its own animated value and randomized horizontal position
   const coins = useRef(
     Array.from({ length: 8 }, () => ({
       anim: new Animated.Value(0),
@@ -132,7 +124,6 @@ function CoinRain({ trigger }: { trigger: number }) {
 
   useEffect(() => {
     if (trigger === 0) return;
-    // Reset and replay
     coins.forEach((c) => {
       c.anim.setValue(0);
       c.x = Math.random() * 300;
@@ -189,7 +180,7 @@ function CoinRain({ trigger }: { trigger: number }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// BONE COUNTER — header badge showing earned bones
+// BONE COUNTER
 // ═══════════════════════════════════════════════════════════════════
 
 function BoneCounter({ count }: { count: number }) {
@@ -213,7 +204,6 @@ function BoneCounter({ count }: { count: number }) {
     </Animated.View>
   );
 }
-
 
 // ── Story Data ────────────────────────────────────────────────────
 
@@ -295,7 +285,7 @@ function StoryCarousel({ lesson, onDone }: { lesson: Lesson; onDone: () => void 
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// LESSON 1 GAME: Sort Needs vs Wants (tap to sort)
+// LESSON 1 GAME: Sort Needs vs Wants
 // ═══════════════════════════════════════════════════════════════════
 
 type SortItem = { id: string; emoji: string; label: string; answer: "need" | "want" };
@@ -412,8 +402,7 @@ function NeedsWantsGame({
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// LESSON 2 GAME: Coin Counter — Interest Calculator
-// Tap to add coins and see how interest grows
+// LESSON 2 GAME: Coin Counter
 // ═══════════════════════════════════════════════════════════════════
 
 function CoinCounterGame({ onDone }: { onDone: () => void }) {
@@ -428,47 +417,32 @@ function CoinCounterGame({ onDone }: { onDone: () => void }) {
       <Text style={styles.gameTitle}>💰 Interest Machine</Text>
       <Text style={styles.gameSubtitle}>Tap + and − to change numbers!</Text>
 
-      {/* Borrowed amount */}
       <View style={styles.counterRow}>
         <Text style={styles.counterLabel}>Bucks borrows:</Text>
         <View style={styles.counterControls}>
-          <TouchableOpacity
-            style={styles.counterBtn}
-            onPress={() => setBorrowed((b) => Math.max(10, b - 10))}
-          >
+          <TouchableOpacity style={styles.counterBtn} onPress={() => setBorrowed((b) => Math.max(10, b - 10))}>
             <Text style={styles.counterBtnText}>−</Text>
           </TouchableOpacity>
           <Text style={styles.counterValue}>${borrowed}</Text>
-          <TouchableOpacity
-            style={styles.counterBtn}
-            onPress={() => setBorrowed((b) => Math.min(500, b + 10))}
-          >
+          <TouchableOpacity style={styles.counterBtn} onPress={() => setBorrowed((b) => Math.min(500, b + 10))}>
             <Text style={styles.counterBtnText}>+</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Interest rate */}
       <View style={styles.counterRow}>
         <Text style={styles.counterLabel}>Interest rate:</Text>
         <View style={styles.counterControls}>
-          <TouchableOpacity
-            style={styles.counterBtn}
-            onPress={() => setRate((r) => Math.max(5, r - 5))}
-          >
+          <TouchableOpacity style={styles.counterBtn} onPress={() => setRate((r) => Math.max(5, r - 5))}>
             <Text style={styles.counterBtnText}>−</Text>
           </TouchableOpacity>
           <Text style={styles.counterValue}>{rate}%</Text>
-          <TouchableOpacity
-            style={styles.counterBtn}
-            onPress={() => setRate((r) => Math.min(50, r + 5))}
-          >
+          <TouchableOpacity style={styles.counterBtn} onPress={() => setRate((r) => Math.min(50, r + 5))}>
             <Text style={styles.counterBtnText}>+</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Result */}
       <View style={styles.resultBox}>
         <Text style={styles.resultRow}>
           💵 Extra (interest): <Text style={styles.resultValue}>${interest}</Text>
@@ -479,9 +453,7 @@ function CoinCounterGame({ onDone }: { onDone: () => void }) {
         </Text>
       </View>
 
-      <Text style={styles.tipText}>
-        💡 Higher rate = MORE money to pay back!
-      </Text>
+      <Text style={styles.tipText}>💡 Higher rate = MORE money to pay back!</Text>
 
       <TouchableOpacity style={[styles.bigBtn, { backgroundColor: "#E07B39" }]} onPress={onDone}>
         <Text style={styles.bigBtnText}>Next: Quiz Time! 🧠</Text>
@@ -491,8 +463,7 @@ function CoinCounterGame({ onDone }: { onDone: () => void }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// LESSON 3 GAME: Money Growth Race — Simple vs Compound
-// Animated bars that grow year by year
+// LESSON 3 GAME: Growth Race
 // ═══════════════════════════════════════════════════════════════════
 
 function GrowthRaceGame({ onDone }: { onDone: () => void }) {
@@ -534,7 +505,6 @@ function GrowthRaceGame({ onDone }: { onDone: () => void }) {
         <Text style={styles.yearBadgeText}>Year {year}</Text>
       </View>
 
-      {/* Simple bar */}
       <View style={styles.barLabelRow}>
         <Text style={styles.barLabel}>📏 Simple</Text>
         <Text style={styles.barValue}>${simple.toFixed(0)}</Text>
@@ -545,16 +515,12 @@ function GrowthRaceGame({ onDone }: { onDone: () => void }) {
             styles.barFill,
             {
               backgroundColor: "#4CAF7C",
-              width: simpleWidth.interpolate({
-                inputRange: [0, 100],
-                outputRange: ["0%", "100%"],
-              }),
+              width: simpleWidth.interpolate({ inputRange: [0, 100], outputRange: ["0%", "100%"] }),
             },
           ]}
         />
       </View>
 
-      {/* Compound bar */}
       <View style={styles.barLabelRow}>
         <Text style={styles.barLabel}>❄️ Compound</Text>
         <Text style={styles.barValue}>${compound.toFixed(0)}</Text>
@@ -565,27 +531,17 @@ function GrowthRaceGame({ onDone }: { onDone: () => void }) {
             styles.barFill,
             {
               backgroundColor: "#6C63FF",
-              width: compoundWidth.interpolate({
-                inputRange: [0, 100],
-                outputRange: ["0%", "100%"],
-              }),
+              width: compoundWidth.interpolate({ inputRange: [0, 100], outputRange: ["0%", "100%"] }),
             },
           ]}
         />
       </View>
 
-      {/* Year controls */}
       <View style={styles.yearControls}>
-        <TouchableOpacity
-          style={styles.counterBtn}
-          onPress={() => setYear((y) => Math.max(0, y - 1))}
-        >
+        <TouchableOpacity style={styles.counterBtn} onPress={() => setYear((y) => Math.max(0, y - 1))}>
           <Text style={styles.counterBtnText}>−</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.fastForwardBtn]}
-          onPress={() => setYear((y) => Math.min(maxYear, y + 1))}
-        >
+        <TouchableOpacity style={styles.fastForwardBtn} onPress={() => setYear((y) => Math.min(maxYear, y + 1))}>
           <Text style={styles.fastForwardText}>⏩ Next Year</Text>
         </TouchableOpacity>
       </View>
@@ -596,10 +552,7 @@ function GrowthRaceGame({ onDone }: { onDone: () => void }) {
         </Text>
       )}
 
-      <TouchableOpacity
-        style={[styles.bigBtn, { backgroundColor: "#6C63FF" }]}
-        onPress={onDone}
-      >
+      <TouchableOpacity style={[styles.bigBtn, { backgroundColor: "#6C63FF" }]} onPress={onDone}>
         <Text style={styles.bigBtnText}>Next: Quiz Time! 🧠</Text>
       </TouchableOpacity>
     </View>
@@ -607,7 +560,7 @@ function GrowthRaceGame({ onDone }: { onDone: () => void }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// SHARED: Quiz Engine
+// QUIZ
 // ═══════════════════════════════════════════════════════════════════
 
 type QuizQ = {
@@ -658,12 +611,7 @@ const QUIZZES: Record<LessonId, QuizQ[]> = {
     {
       emoji: "💸",
       question: "What is INTEREST?",
-      options: [
-        "Free money",
-        "The fee for borrowing",
-        "A type of bank",
-        "A coin",
-      ],
+      options: ["Free money", "The fee for borrowing", "A type of bank", "A coin"],
       correctIndex: 1,
       explanation: "Interest is the extra money you pay for borrowing. It's a fee!",
     },
@@ -857,7 +805,7 @@ function QuizGame({
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// LESSON COMPLETE SCREEN
+// COMPLETE
 // ═══════════════════════════════════════════════════════════════════
 
 function LessonComplete({
@@ -881,12 +829,7 @@ function LessonComplete({
 
   return (
     <View style={[styles.gameBox, { alignItems: "center" }]}>
-      <Animated.Text
-        style={[
-          styles.completeEmoji,
-          { transform: [{ scale: bounce.interpolate({ inputRange: [0, 1], outputRange: [0, 1] }) }] },
-        ]}
-      >
+      <Animated.Text style={[styles.completeEmoji, { transform: [{ scale: bounce }] }]}>
         🎉
       </Animated.Text>
       <Text style={styles.completeTitle}>Lesson Complete!</Text>
@@ -914,7 +857,7 @@ function LessonComplete({
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// LESSON FLOW CONTROLLER
+// FLOW
 // ═══════════════════════════════════════════════════════════════════
 
 type Stage = "story" | "game" | "quiz" | "complete";
@@ -935,7 +878,6 @@ function LessonView({
   const [mood, setMood] = useState<BucksMood>("idle");
   const [coinTrigger, setCoinTrigger] = useState(0);
 
-  // Auto-return mood to idle after 2 seconds
   useEffect(() => {
     if (mood === "idle") return;
     const t = setTimeout(() => setMood("idle"), 2000);
@@ -948,20 +890,12 @@ function LessonView({
     setCoinTrigger((t) => t + 1);
   };
 
-  const handleWrong = () => {
-    setMood("sad");
-  };
+  const handleWrong = () => setMood("sad");
 
   const renderGame = () => {
     switch (lesson.id) {
       case "needs-wants":
-        return (
-          <NeedsWantsGame
-            onDone={() => setStage("quiz")}
-            onCorrect={handleCorrect}
-            onWrong={handleWrong}
-          />
-        );
+        return <NeedsWantsGame onDone={() => setStage("quiz")} onCorrect={handleCorrect} onWrong={handleWrong} />;
       case "borrowing":
         return <CoinCounterGame onDone={() => setStage("quiz")} />;
       case "growth":
@@ -970,93 +904,88 @@ function LessonView({
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: lesson.lightColor }]}>
-    <View style={{ flex: 1 }}>
-    <ScrollView
-      style={[styles.container, { backgroundColor: lesson.lightColor }]}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <View style={styles.lessonHeader}>
-        <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>←</Text>
-        </TouchableOpacity>
+    <ImageBackground source={require("../../assets/LessonsBG.png")} style={{ flex: 1 }} resizeMode="cover">
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: "transparent" }]}>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.lessonHeaderNum, { color: lesson.color }]}>
-            Lesson {lesson.number}
-          </Text>
-          <Text style={styles.lessonHeaderTitle}>
-            {lesson.emoji} {lesson.title}
-          </Text>
-        </View>
-        <BoneCounter count={bones} />
-      </View>
-
-      {/* Stage indicator */}
-      <View style={styles.stageRow}>
-        {(["story", "game", "quiz"] as Stage[]).map((s, i) => {
-          const stageIdx = ["story", "game", "quiz", "complete"].indexOf(stage);
-          const active = i <= stageIdx;
-          return (
-            <View key={s} style={styles.stageItem}>
-              <View
-                style={[
-                  styles.stageCircle,
-                  { backgroundColor: active ? lesson.color : "#E0E0E0" },
-                ]}
-              >
-                <Text style={styles.stageCircleText}>
-                  {s === "story" ? "📖" : s === "game" ? "🎮" : "🧠"}
+          <ScrollView
+            style={[styles.container]}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.lessonHeader}>
+              <TouchableOpacity onPress={onBack} style={styles.backBtn}>
+                <Text style={styles.backBtnText}>←</Text>
+              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.lessonHeaderNum, { color: lesson.color }]}>
+                  Lesson {lesson.number}
+                </Text>
+                <Text style={styles.lessonHeaderTitle}>
+                  {lesson.emoji} {lesson.title}
                 </Text>
               </View>
-              {i < 2 && (
-                <View
-                  style={[
-                    styles.stageLine,
-                    { backgroundColor: i < stageIdx ? lesson.color : "#E0E0E0" },
-                  ]}
-                />
-              )}
+              <BoneCounter count={bones} />
             </View>
-          );
-        })}
-      </View>
 
-      {stage === "story" && <StoryCarousel lesson={lesson} onDone={() => setStage("game")} />}
-      {stage === "game" && renderGame()}
-      {stage === "quiz" && (
-        <QuizGame
-          lesson={lesson}
-          onCorrect={handleCorrect}
-          onWrong={handleWrong}
-          onDone={(score, total) => {
-            setFinalScore({ score, total });
-            setStage("complete");
-            setMood("excited");
-          }}
-        />
-      )}
-      {stage === "complete" && (
-        <LessonComplete
-          lesson={lesson}
-          score={finalScore.score}
-          total={finalScore.total}
-          onHome={onBack}
-        />
-      )}
+            <View style={styles.stageRow}>
+              {(["story", "game", "quiz"] as Stage[]).map((s, i) => {
+                const stageIdx = ["story", "game", "quiz", "complete"].indexOf(stage);
+                const active = i <= stageIdx;
+                return (
+                  <View key={s} style={styles.stageItem}>
+                    <View style={[styles.stageCircle, { backgroundColor: active ? lesson.color : "#E0E0E0" }]}>
+                      <Text style={styles.stageCircleText}>
+                        {s === "story" ? "📖" : s === "game" ? "🎮" : "🧠"}
+                      </Text>
+                    </View>
+                    {i < 2 && (
+                      <View
+                        style={[
+                          styles.stageLine,
+                          { backgroundColor: i < stageIdx ? lesson.color : "#E0E0E0" },
+                        ]}
+                      />
+                    )}
+                  </View>
+                );
+              })}
+            </View>
 
-      <View style={{ height: 40 }} />
-    </ScrollView>
-    <CoinRain trigger={coinTrigger} />
-    <BucksMascot mood={mood} />
-    </View>
-    </SafeAreaView>
+            {stage === "story" && <StoryCarousel lesson={lesson} onDone={() => setStage("game")} />}
+            {stage === "game" && renderGame()}
+            {stage === "quiz" && (
+              <QuizGame
+                lesson={lesson}
+                onCorrect={handleCorrect}
+                onWrong={handleWrong}
+                onDone={(score, total) => {
+                  setFinalScore({ score, total });
+                  setStage("complete");
+                  setMood("excited");
+                }}
+              />
+            )}
+            {stage === "complete" && (
+              <LessonComplete
+                lesson={lesson}
+                score={finalScore.score}
+                total={finalScore.total}
+                onHome={onBack}
+              />
+            )}
+
+            <View style={{ height: 40 }} />
+          </ScrollView>
+          <CoinRain trigger={coinTrigger} />
+          <BucksMascot mood={mood} />
+        </View>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// MAIN SCREEN — Lesson Picker
+// MAIN SCREEN
 // ═══════════════════════════════════════════════════════════════════
 
 export default function LessonsScreen() {
@@ -1075,59 +1004,59 @@ export default function LessonsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-      {/* Title row with bone counter */}
-      <View style={styles.homeTitleRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>🦴 Bucks Academy</Text>
-          <Text style={styles.subtitle}>Pick a lesson to start!</Text>
-        </View>
-        <BoneCounter count={bones} />
-      </View>
-
-      {/* Bones earned banner */}
-      <View style={styles.bonesBanner}>
-        <Text style={styles.bonesBannerEmoji}>🦴</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.bonesBannerLabel}>Bones Collected</Text>
-          <Text style={styles.bonesBannerCount}>{bones}</Text>
-        </View>
-        <Text style={styles.bonesBannerMsg}>
-          {bones === 0
-            ? "Start a lesson to earn bones!"
-            : bones < 5
-            ? "Great start! 🐾"
-            : bones < 15
-            ? "You're on fire! 🔥"
-            : "Bucks is so proud! 🏆"}
-        </Text>
-      </View>
-
-      {LESSONS.map((lesson) => (
-        <TouchableOpacity
-          key={lesson.id}
-          style={[styles.lessonCard, { backgroundColor: lesson.lightColor }]}
-          onPress={() => setSelected(lesson)}
-          activeOpacity={0.85}
-        >
-          <View style={[styles.lessonIconBox, { backgroundColor: lesson.color }]}>
-            <Text style={styles.lessonIcon}>{lesson.emoji}</Text>
+    <ImageBackground source={require("../../assets/LessonsBG.png")} style={{ flex: 1 }} resizeMode="cover">
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.homeTitleRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title}>🦴 Bucks Academy</Text>
+              <Text style={styles.subtitle}>Pick a lesson to start!</Text>
+            </View>
+            <BoneCounter count={bones} />
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.lessonNum, { color: lesson.color }]}>
-              LESSON {lesson.number}
+
+          <View style={styles.bonesBanner}>
+            <Text style={styles.bonesBannerEmoji}>🦴</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.bonesBannerLabel}>Bones Collected</Text>
+              <Text style={styles.bonesBannerCount}>{bones}</Text>
+            </View>
+            <Text style={styles.bonesBannerMsg}>
+              {bones === 0
+                ? "Start a lesson to earn bones!"
+                : bones < 5
+                ? "Great start! 🐾"
+                : bones < 15
+                ? "You're on fire! 🔥"
+                : "Bucks is so proud! 🏆"}
             </Text>
-            <Text style={styles.lessonTitle}>{lesson.title}</Text>
-            <Text style={styles.lessonSubtitle}>{lesson.subtitle}</Text>
           </View>
-          <Text style={[styles.playArrow, { color: lesson.color }]}>▶</Text>
-        </TouchableOpacity>
-      ))}
 
-      <View style={{ height: 40 }} />
-    </ScrollView>
-    </SafeAreaView>
+          {LESSONS.map((lesson) => (
+            <TouchableOpacity
+              key={lesson.id}
+              style={styles.lessonCard}
+              onPress={() => setSelected(lesson)}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.lessonIconBox, { backgroundColor: lesson.color }]}>
+                <Text style={styles.lessonIcon}>{lesson.emoji}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.lessonNum, { color: lesson.color }]}>
+                  LESSON {lesson.number}
+                </Text>
+                <Text style={styles.lessonTitle}>{lesson.title}</Text>
+                <Text style={styles.lessonSubtitle}>{lesson.subtitle}</Text>
+              </View>
+              <Text style={[styles.playArrow, { color: lesson.color }]}>▶</Text>
+            </TouchableOpacity>
+          ))}
+
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
@@ -1135,92 +1064,51 @@ export default function LessonsScreen() {
 // STYLES
 // ═══════════════════════════════════════════════════════════════════
 
-const ACCENT = colors.accent ?? "#D4A017";
-const ACCENT_LIGHT = colors.accentLight ?? "#FFF8E1";
+const ACCENT = "#7C5CBF";
+const ACCENT_LIGHT = "rgba(255,255,255,0.92)";
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: ACCENT_LIGHT },
-  container: { flex: 1, backgroundColor: ACCENT_LIGHT },
+  safeArea: { flex: 1, backgroundColor: "transparent" },
+  container: { flex: 1, backgroundColor: "transparent" },
   scrollContent: { padding: 20, paddingTop: 24, flexGrow: 1 },
 
-  // Header
-  title: { fontSize: 36, fontWeight: "800", color: ACCENT, marginTop: 8 },
-  subtitle: { marginTop: 6, marginBottom: 16, color: "#7C6A33", fontSize: 17 },
+  title: { fontSize: 36, fontWeight: "800", color: "#3B2A6E", marginTop: 8 },
+  subtitle: { marginTop: 6, marginBottom: 16, color: "#6B5A9E", fontSize: 17 },
 
-  // Home title row (title + bone counter)
-  homeTitleRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
+  homeTitleRow: { flexDirection: "row", alignItems: "flex-start" },
 
-  // Bones earned banner (big, prominent card on home)
   bonesBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(255,255,255,0.92)",
     borderRadius: 20,
     padding: 16,
     marginBottom: 20,
     borderWidth: 2,
     borderColor: ACCENT,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  bonesBannerEmoji: {
-    fontSize: 40,
-    marginRight: 12,
-  },
-  bonesBannerLabel: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: "#7C6A33",
-    letterSpacing: 1,
-  },
-  bonesBannerCount: {
-    fontSize: 32,
-    fontWeight: "800",
-    color: ACCENT,
-    marginTop: -2,
-  },
-  bonesBannerMsg: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#7C6A33",
-    maxWidth: 100,
-    textAlign: "right",
   },
 
-  // Lesson picker cards
+  bonesBannerEmoji: { fontSize: 40, marginRight: 12 },
+  bonesBannerLabel: { fontSize: 12, fontWeight: "800", color: "#7C6A33" },
+  bonesBannerCount: { fontSize: 32, fontWeight: "800", color: ACCENT },
+  bonesBannerMsg: { fontSize: 12, fontWeight: "700", color: "#7C6A33" },
+
   lessonCard: {
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 20,
     padding: 16,
     marginBottom: 14,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: "rgba(255,255,255,0.92)",
   },
-  lessonIconBox: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 14,
-  },
-  lessonIcon: { fontSize: 36 },
-  lessonNum: { fontSize: 11, fontWeight: "800", letterSpacing: 1 },
-  lessonTitle: { fontSize: 18, fontWeight: "800", color: "#2C2C2C", marginTop: 2 },
-  lessonSubtitle: { fontSize: 13, color: "#666", marginTop: 2 },
-  playArrow: { fontSize: 24, marginLeft: 8 },
 
-  // Lesson view header
+  lessonIconBox: { width: 64, height: 64, borderRadius: 16, alignItems: "center", justifyContent: "center", marginRight: 14 },
+  lessonIcon: { fontSize: 36 },
+  lessonNum: { fontSize: 11, fontWeight: "800" },
+  lessonTitle: { fontSize: 18, fontWeight: "800" },
+  lessonSubtitle: { fontSize: 13 },
+  playArrow: { fontSize: 24 },
+
   lessonHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -1234,17 +1122,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   backBtnText: { fontSize: 22, fontWeight: "800", color: "#2C2C2C" },
   lessonHeaderNum: { fontSize: 12, fontWeight: "800", letterSpacing: 1 },
   lessonHeaderTitle: { fontSize: 20, fontWeight: "800", color: "#2C2C2C" },
 
-  // Stage progress
   stageRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1262,30 +1144,15 @@ const styles = StyleSheet.create({
   stageCircleText: { fontSize: 20 },
   stageLine: { width: 32, height: 4, marginHorizontal: 4, borderRadius: 2 },
 
-  // Story carousel
   storyBox: {
     borderRadius: 28,
     padding: 28,
     alignItems: "center",
     minHeight: 480,
     justifyContent: "space-between",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 4,
   },
-  storyDots: {
-    flexDirection: "row",
-    gap: 6,
-    marginBottom: 12,
-  },
-  storyDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#E0E0E0",
-  },
+  storyDots: { flexDirection: "row", gap: 6, marginBottom: 12 },
+  storyDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#E0E0E0" },
   storyEmoji: { fontSize: 140, marginVertical: 12 },
   storyText: {
     fontSize: 22,
@@ -1294,10 +1161,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 32,
     marginBottom: 16,
-    paddingHorizontal: 4,
   },
 
-  // Big button (shared)
   bigBtn: {
     borderRadius: 16,
     paddingVertical: 16,
@@ -1305,32 +1170,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     alignSelf: "stretch",
     marginTop: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 5,
-    elevation: 4,
   },
   bigBtnText: { color: "#fff", fontWeight: "800", fontSize: 17 },
 
-  // Game box (shared)
   gameBox: {
     backgroundColor: "#fff",
     borderRadius: 28,
     padding: 24,
     minHeight: 480,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 4,
   },
   gameTitle: {
     fontSize: 22,
     fontWeight: "800",
     color: "#2C2C2C",
     textAlign: "center",
-    marginBottom: 4,
   },
   gameSubtitle: {
     fontSize: 14,
@@ -1345,22 +1198,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 16,
   },
-  gameDoneEmoji: { fontSize: 64, textAlign: "center", marginBottom: 8 },
-  gameDoneTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#2C2C2C",
-    textAlign: "center",
-    marginBottom: 6,
-  },
-  gameDoneScore: {
-    fontSize: 16,
-    color: "#666",
-    textAlign: "center",
-    marginBottom: 20,
-  },
 
-  // Needs/wants sort game
   sortCard: {
     backgroundColor: "#FAFAFA",
     borderWidth: 3,
@@ -1370,37 +1208,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-  sortEmoji: { fontSize: 72, marginBottom: 8 },
-  sortLabel: { fontSize: 22, fontWeight: "800", color: "#2C2C2C" },
-  sortFeedback: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#2C2C2C",
-    marginTop: 8,
-  },
+  sortEmoji: { fontSize: 72 },
+  sortLabel: { fontSize: 22, fontWeight: "800" },
+  sortFeedback: { fontSize: 16, fontWeight: "800", marginTop: 8 },
   sortBtnRow: { flexDirection: "row", gap: 12 },
   sortBtn: {
     flex: 1,
     borderRadius: 16,
     paddingVertical: 20,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 5,
-    elevation: 4,
   },
-  sortBtnEmoji: { fontSize: 32, marginBottom: 4 },
+  sortBtnEmoji: { fontSize: 32 },
   sortBtnText: { color: "#fff", fontSize: 18, fontWeight: "800" },
 
-  // Coin counter game
   counterRow: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 14,
   },
-  counterLabel: { fontSize: 15, fontWeight: "700", color: "#2C2C2C" },
   counterControls: { flexDirection: "row", alignItems: "center", gap: 10 },
   counterBtn: {
     width: 40,
@@ -1411,91 +1236,53 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   counterBtnText: { color: "#fff", fontSize: 24, fontWeight: "800" },
-  counterValue: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#2C2C2C",
-    minWidth: 60,
-    textAlign: "center",
-  },
+  counterValue: { fontSize: 20, fontWeight: "800" },
+
   resultBox: {
     backgroundColor: "#FEF0E6",
     borderRadius: 16,
     padding: 16,
     marginTop: 8,
-    marginBottom: 12,
   },
-  resultRow: { fontSize: 15, color: "#2C2C2C", marginBottom: 8 },
+  resultRow: { fontSize: 15 },
   resultValue: { fontWeight: "800", color: "#E07B39" },
-  resultDivider: { height: 1, backgroundColor: "#E0C4A8", marginVertical: 8 },
-  resultBig: { fontSize: 20, fontWeight: "800", color: "#2C2C2C" },
-  tipText: {
-    fontSize: 13,
-    color: "#666",
-    fontStyle: "italic",
-    textAlign: "center",
-    marginBottom: 12,
-  },
+  resultDivider: { height: 1, marginVertical: 8 },
+  resultBig: { fontSize: 20, fontWeight: "800" },
 
-  // Growth race game
+  tipText: { fontSize: 13, color: "#666", textAlign: "center" },
+
   yearBadge: {
     alignSelf: "center",
     backgroundColor: "#6C63FF",
     borderRadius: 20,
     paddingHorizontal: 20,
     paddingVertical: 6,
-    marginBottom: 16,
   },
-  yearBadgeText: { color: "#fff", fontWeight: "800", fontSize: 16 },
-  barLabelRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 4,
-    marginTop: 8,
-  },
-  barLabel: { fontSize: 15, fontWeight: "700", color: "#2C2C2C" },
-  barValue: { fontSize: 15, fontWeight: "800", color: "#2C2C2C" },
+  yearBadgeText: { color: "#fff", fontWeight: "800" },
+
   barTrack: {
     height: 24,
     backgroundColor: "#F0F0F0",
     borderRadius: 12,
-    overflow: "hidden",
     marginBottom: 4,
   },
-  barFill: { height: "100%", borderRadius: 12 },
-  yearControls: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-    marginTop: 16,
-    marginBottom: 12,
-  },
+  barFill: { height: "100%" },
+
+  yearControls: { flexDirection: "row", justifyContent: "center", gap: 12 },
   fastForwardBtn: {
     backgroundColor: "#6C63FF",
     borderRadius: 20,
     paddingHorizontal: 20,
     paddingVertical: 12,
   },
-  fastForwardText: { color: "#fff", fontWeight: "800", fontSize: 15 },
+  fastForwardText: { color: "#fff", fontWeight: "800" },
 
-  // Quiz
-  progressRow: { flexDirection: "row", gap: 6, marginBottom: 16, justifyContent: "center" },
-  progressDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#E0E0E0",
-  },
-  quizEmoji: { fontSize: 64, textAlign: "center", marginBottom: 8 },
-  quizQuestion: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#2C2C2C",
-    textAlign: "center",
-    marginBottom: 16,
-    lineHeight: 24,
-  },
+  progressRow: { flexDirection: "row", justifyContent: "center", gap: 6 },
+  progressDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#E0E0E0" },
+
+  quizEmoji: { fontSize: 64, textAlign: "center" },
+  quizQuestion: { fontSize: 18, fontWeight: "800", textAlign: "center" },
+
   optionBtn: {
     borderWidth: 2,
     borderRadius: 14,
@@ -1503,28 +1290,16 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   optionText: { fontSize: 16, fontWeight: "700", textAlign: "center" },
-  explanationBox: { borderRadius: 14, padding: 14, marginTop: 4, marginBottom: 12 },
-  explanationLabel: {
-    fontWeight: "800",
-    fontSize: 15,
-    marginBottom: 4,
-    color: "#2C2C2C",
-  },
-  explanationText: { fontSize: 14, color: "#555", lineHeight: 20 },
 
-  // Complete screen
-  completeEmoji: { fontSize: 80, marginBottom: 12 },
-  completeTitle: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: "#2C2C2C",
-    marginBottom: 12,
-  },
-  starRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
+  explanationBox: { borderRadius: 14, padding: 14, marginTop: 4 },
+  explanationLabel: { fontWeight: "800" },
+
+  completeEmoji: { fontSize: 80 },
+  completeTitle: { fontSize: 26, fontWeight: "800" },
+
+  starRow: { flexDirection: "row", gap: 8 },
   star: { fontSize: 48 },
-  completeScore: { fontSize: 18, color: "#666", fontWeight: "700" },
 
-  // ── Bone counter (header badge) ──
   boneCounter: {
     flexDirection: "row",
     alignItems: "center",
@@ -1532,53 +1307,25 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
-  boneCounterEmoji: { fontSize: 18, marginRight: 4 },
-  boneCounterText: { fontSize: 16, fontWeight: "800", color: "#2C2C2C" },
+  boneCounterEmoji: { fontSize: 18 },
+  boneCounterText: { fontSize: 16, fontWeight: "800" },
 
-  // ── Bucks mascot (bottom-right) ──
   mascotWrap: {
     position: "absolute",
     bottom: 16,
     right: 16,
-    alignItems: "flex-end",
   },
   mascotEmoji: { fontSize: 56 },
+
   speechBubble: {
     backgroundColor: "#fff",
     borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    padding: 10,
     marginBottom: 4,
-    maxWidth: 160,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
   },
-  speechText: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#2C2C2C",
-    textAlign: "center",
-  },
-  speechTail: {
-    position: "absolute",
-    bottom: -6,
-    right: 20,
-    width: 12,
-    height: 12,
-    backgroundColor: "#fff",
-    transform: [{ rotate: "45deg" }],
-  },
+  speechText: { fontSize: 14, fontWeight: "800" },
 
-  // ── Coin rain overlay ──
   coinRainWrap: {
     position: "absolute",
     top: 0,
