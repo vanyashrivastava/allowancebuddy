@@ -34,8 +34,8 @@ const LESSONS: Lesson[] = [
     emoji: "🦴",
     title: "Need It or Want It?",
     subtitle: "Bucks finds $20!",
-    color: "#4CAF7C",
-    lightColor: "#E8F8EF",
+    color: "#7C5CBF",   // 💜 main purple
+    lightColor: "#F3F1FF",
   },
   {
     id: "borrowing",
@@ -43,8 +43,8 @@ const LESSONS: Lesson[] = [
     emoji: "💰",
     title: "Bucks Borrows a Bone",
     subtitle: "Loans & interest",
-    color: "#E07B39",
-    lightColor: "#FEF0E6",
+    color: "#A66DD4",   // 💜 lighter purple
+    lightColor: "#F7F3FF",
   },
   {
     id: "growth",
@@ -52,8 +52,8 @@ const LESSONS: Lesson[] = [
     emoji: "🌱",
     title: "Watch Money Grow!",
     subtitle: "The magic of compound",
-    color: "#6C63FF",
-    lightColor: "#EEEDFF",
+    color: "#5E4AE3",   // 💜 deeper purple
+    lightColor: "#F1F0FF",
   },
 ];
 
@@ -1039,7 +1039,7 @@ export default function LessonsScreen() {
               onPress={() => setSelected(lesson)}
               activeOpacity={0.85}
             >
-              <View style={[styles.lessonIconBox, { backgroundColor: lesson.color }]}>
+              <View style={[styles.lessonIconBox, { backgroundColor: lesson.color + "CC" }]}>
                 <Text style={styles.lessonIcon}>{lesson.emoji}</Text>
               </View>
               <View style={{ flex: 1 }}>
@@ -1105,7 +1105,7 @@ const styles = StyleSheet.create({
   lessonIconBox: { width: 64, height: 64, borderRadius: 16, alignItems: "center", justifyContent: "center", marginRight: 14 },
   lessonIcon: { fontSize: 36 },
   lessonNum: { fontSize: 11, fontWeight: "800" },
-  lessonTitle: { fontSize: 18, fontWeight: "800" },
+  lessonTitle: { fontSize: 18, fontWeight: "800", color: "#2C2C2C",},
   lessonSubtitle: { fontSize: 13 },
   playArrow: { fontSize: 24 },
 
